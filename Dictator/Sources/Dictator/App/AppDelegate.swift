@@ -184,10 +184,10 @@ extension AppDelegate: NSWindowDelegate {
         let hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
 
         if !hasCompletedOnboarding {
-            // Check if user was on the final step (index 4)
+            // Check if user was on the final step (index 5: Welcome=0, Accessibility=1, Microphone=2, API Key=3, Download=4, All Set=5)
             let currentStep = UserDefaults.standard.integer(forKey: "currentOnboardingStep")
 
-            if currentStep == 4 {
+            if currentStep == 5 {
                 // On final step - treat closing as completion
                 print("[App] Onboarding closed on final step - marking as complete")
                 UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")

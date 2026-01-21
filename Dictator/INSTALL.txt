@@ -24,11 +24,11 @@ FIRST LAUNCH:
   - These are required for dictation to work
 
   IMPORTANT - Model Download:
-  - On first launch, the app downloads ASR models (~200MB)
-  - This happens in the background and takes 2-5 minutes
-  - Internet connection required for first launch
-  - The app may appear frozen during download - this is normal
-  - Check Console.app for progress: filter for "TranscriptionService"
+  - During onboarding, voice recognition models (~200MB) will download
+  - This happens as part of the setup process with a progress bar
+  - Takes 2-5 minutes depending on internet speed
+  - Internet connection required for first setup
+  - You cannot proceed until download completes
   - Once downloaded, models are cached and app works offline
 
 REQUIREMENTS:

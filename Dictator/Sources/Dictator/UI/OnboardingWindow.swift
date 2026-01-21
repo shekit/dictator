@@ -7,6 +7,9 @@ struct OnboardingWindow: View {
     @State private var apiKey: String = ""
     @State private var isWaitingForPermission = false
     @State private var permissionCheckTimer: Timer?
+    @State private var isDownloadingModels = false
+    @State private var downloadProgress: Double = 0.0
+    @State private var downloadStatus: String = "Preparing to download..."
     @Environment(\.dismiss) private var dismiss
     let onComplete: () -> Void
 
@@ -44,6 +47,13 @@ struct OnboardingWindow: View {
             description: "Add OpenRouter API key to enable AI-powered transcript cleanup.",
             actionTitle: "Continue",
             action: .apiKeyInput
+        ),
+        OnboardingStep(
+            icon: "arrow.down.circle.fill",
+            title: "Downloading Voice Models",
+            description: "Downloading speech recognition models (~200MB).\n\nThis only happens once.",
+            actionTitle: "Downloading...",
+            action: .downloadModels
         ),
         OnboardingStep(
             icon: "checkmark.circle.fill",
@@ -132,6 +142,32 @@ struct OnboardingWindow: View {
                     .padding(.top, 10)
                 }
 
+                // Download Progress (only on download step)
+                if steps[currentStep].action == .downloadModels {
+                    VStack(spacing: 16) {
+                        ProgressView(value: downloadProgress, total: 1.0)
+                            .frame(width: 400)
+                            .progressViewStyle(.linear)
+
+                        Text(downloadStatus)
+                            .font(.body)
+                            .foregroundColor(.secondary)
+
+                        if !isDownloadingModels && downloadProgress >= 1.0 {
+                            Text("✓ Models ready!")
+                                .font(.body.bold())
+                                .foregroundColor(.green)
+                        }
+                    }
+                    .padding(.top, 20)
+                    .onAppear {
+                        // Auto-start download when this step appears
+                        if !isDownloadingModels && downloadProgress == 0.0 {
+                            startModelDownload()
+                        }
+                    }
+                }
+
                 Spacer()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -168,6 +204,13 @@ struct OnboardingWindow: View {
                             requestPermissionAndStartMonitoring()
                         }
                         .buttonStyle(.borderedProminent)
+                    } else if steps[currentStep].action == .downloadModels {
+                        // For download step, show "Continue" button disabled until complete
+                        Button(downloadProgress >= 1.0 ? "Continue" : "Downloading...") {
+                            handleAction()
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(downloadProgress < 1.0)
                     } else {
                         Button(steps[currentStep].actionTitle) {
                             handleAction()
@@ -190,6 +233,11 @@ struct OnboardingWindow: View {
         case .apiKeyInput:
             saveAPIKey()
             advance()
+        case .downloadModels:
+            // Only advance if download is complete
+            if downloadProgress >= 1.0 {
+                advance()
+            }
         case .none:
             advance()
         default:
@@ -291,6 +339,63 @@ struct OnboardingWindow: View {
             print("[Onboarding] No API key entered, skipped")
         }
     }
+
+    private func startModelDownload() {
+        guard !isDownloadingModels else { return }
+
+        isDownloadingModels = true
+        downloadProgress = 0.0
+        downloadStatus = "Preparing to download..."
+
+        print("[Onboarding] Starting model download...")
+
+        Task {
+            // Simulate progress updates since FluidAudio doesn't provide progress callbacks
+            let progressTask = Task {
+                // Gradually update progress over expected download time
+                for i in 1...30 {
+                    try? await Task.sleep(for: .seconds(1))
+                    await MainActor.run {
+                        // Slow progress updates (90% in 30 seconds, then wait for actual completion)
+                        downloadProgress = min(0.9, Double(i) * 0.03)
+
+                        if downloadProgress < 0.3 {
+                            downloadStatus = "Connecting to server..."
+                        } else if downloadProgress < 0.6 {
+                            downloadStatus = "Downloading models (~200MB)..."
+                        } else {
+                            downloadStatus = "Almost done..."
+                        }
+                    }
+                }
+            }
+
+            do {
+                // Actually download the models
+                try await TranscriptionService.shared.prepareModels()
+
+                // Cancel progress simulation
+                progressTask.cancel()
+
+                await MainActor.run {
+                    downloadProgress = 1.0
+                    downloadStatus = "Download complete!"
+                    isDownloadingModels = false
+                    print("[Onboarding] Models downloaded successfully")
+                }
+            } catch {
+                // Cancel progress simulation
+                progressTask.cancel()
+
+                await MainActor.run {
+                    downloadProgress = 0.0
+                    downloadStatus = "Download failed: \(error.localizedDescription)"
+                    isDownloadingModels = false
+                    print("[Onboarding] Model download failed: \(error)")
+                }
+            }
+        }
+    }
 }
 
 // MARK: - Supporting Types
@@ -314,6 +419,7 @@ struct OnboardingStep {
         case requestMicrophone
         case requestAccessibility
         case apiKeyInput
+        case downloadModels
     }
 }
 
