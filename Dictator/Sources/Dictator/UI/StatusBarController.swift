@@ -51,6 +51,7 @@ final class StatusBarController {
 
         configureButton()
         configureMenu()
+        observeUserDefaultsChanges()
     }
 
     // MARK: - Public Methods
@@ -170,6 +171,17 @@ final class StatusBarController {
 
         // Assign menu to status item
         statusItem.menu = menu
+    }
+
+    private func observeUserDefaultsChanges() {
+        // Observe UserDefaults changes to update menu when API key is added/removed
+        NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
+            .debounce(for: .milliseconds(100), scheduler: DispatchQueue.main)
+            .sink { [weak self] _ in
+                // Update menu items when API key status changes
+                self?.updateLLMMenuItems()
+            }
+            .store(in: &cancellables)
     }
 
     private func updateMenuForOnboardingStatus() {
