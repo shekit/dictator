@@ -248,10 +248,16 @@ final class StatusBarController {
         if mode == .cloud && !EnvLoader.shared.hasOpenRouterKey {
             let alert = NSAlert()
             alert.messageText = "OpenRouter API Key Required"
-            alert.informativeText = "To use Cloud mode, you need to add your OpenRouter API key.\n\nOpen Settings from the menu bar and enter your API key."
+            alert.informativeText = "To use Cloud mode, you need to add your OpenRouter API key."
             alert.alertStyle = .warning
-            alert.addButton(withTitle: "OK")
-            alert.runModal()
+            alert.addButton(withTitle: "Open Settings")
+            alert.addButton(withTitle: "Cancel")
+
+            let response = alert.runModal()
+            if response == .alertFirstButtonReturn {
+                // User clicked "Open Settings"
+                handleSettings()
+            }
             return
         }
 
