@@ -155,3 +155,44 @@
 
 **Commit**: e4dcb9f - Treat closing onboarding on final step as completion
 
+
+## 2026-01-21 - Add smart Ollama server management
+
+**User Request**: "Okay, don't code this yet, but tell me, is there some way to launch the Olama server from the menu or the settings directly?"
+User chose Option C (Smart Helper) with explicit requirement: "just one thing to keep in mind is that suppose they don't have Olama installed or whatever, we should handle any errors with running it gracefully"
+
+**Implementation**: Created OllamaManager singleton to manage Ollama server lifecycle with graceful error handling.
+
+**Features**:
+1. **OllamaManager.swift** (new file):
+   - Singleton for starting/stopping Ollama server
+   - Automatically finds Ollama executable in common paths (/usr/local/bin, /opt/homebrew/bin, etc.)
+   - Falls back to 'which' command if not found in common locations
+   - Returns (success: Bool, error: String?) for graceful error handling
+   - Manages Process lifecycle with proper cleanup
+
+2. **StatusBarController.swift** (modified):
+   - When user selects Local mode without Ollama running, shows dialog: "Ollama is not running. Would you like to start it?"
+   - On "Start Ollama" click:
+     - Attempts to start server via OllamaManager
+     - Waits 2 seconds for server startup
+     - Refreshes Ollama connection status
+     - Shows three-tier feedback:
+       - Success: "Ollama Started" confirmation
+       - Not responding yet: "Try again in a moment" warning
+       - Failed to start: Detailed error message (e.g., "Ollama not found. Install it from ollama.ai")
+
+3. **AppDelegate.swift** (modified):
+   - Added OllamaManager.shared.stopOllamaServer() to applicationWillTerminate
+   - Ensures clean shutdown of any Ollama server started by the app
+
+**Error Handling**:
+- Missing Ollama installation: Clear message with ollama.ai link
+- Failed to launch: Shows actual error description
+- Server not responding: User-friendly "wait a moment" message
+- All errors displayed in appropriate NSAlert dialogs with proper alert styles
+
+**Result**: Users can seamlessly start Ollama from within the app when selecting Local mode, with clear feedback for all scenarios.
+
+**Commit**: 56a94c8 - Add smart Ollama server management with graceful error handling
+
