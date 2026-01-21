@@ -65,6 +65,11 @@ Package.resolved
 Packages/
 
 # ===================
+# Built Apps
+# ===================
+*.app/
+
+# ===================
 # App Data (local testing)
 # ===================
 *.log
