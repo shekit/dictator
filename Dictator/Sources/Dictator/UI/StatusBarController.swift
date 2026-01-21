@@ -255,7 +255,7 @@ final class StatusBarController {
             return
         }
 
-        // If switching to local mode, check Ollama and refresh
+        // If switching to local mode, check Ollama and offer to start it
         if mode == .local {
             Task {
                 await service.refreshOllamaStatus()
@@ -263,10 +263,52 @@ final class StatusBarController {
                     await MainActor.run {
                         let alert = NSAlert()
                         alert.messageText = "Ollama Not Running"
-                        alert.informativeText = "Ollama is not running. Start it with 'ollama serve' in Terminal, or install from ollama.ai"
+                        alert.informativeText = "Ollama is not running. Would you like to start it?\n\nIf Ollama is not installed, get it from ollama.ai"
                         alert.alertStyle = .warning
-                        alert.addButton(withTitle: "OK")
-                        alert.runModal()
+                        alert.addButton(withTitle: "Start Ollama")
+                        alert.addButton(withTitle: "Cancel")
+
+                        let response = alert.runModal()
+                        if response == .alertFirstButtonReturn {
+                            // User clicked "Start Ollama"
+                            let result = OllamaManager.shared.startOllamaServer()
+
+                            if result.success {
+                                // Wait a moment for server to start, then refresh status
+                                Task {
+                                    try? await Task.sleep(for: .seconds(2))
+                                    await service.refreshOllamaStatus()
+
+                                    if service.isOllamaAvailable {
+                                        await MainActor.run {
+                                            let successAlert = NSAlert()
+                                            successAlert.messageText = "Ollama Started"
+                                            successAlert.informativeText = "Ollama server is now running. You can use Local mode."
+                                            successAlert.alertStyle = .informational
+                                            successAlert.addButton(withTitle: "OK")
+                                            successAlert.runModal()
+                                        }
+                                    } else {
+                                        await MainActor.run {
+                                            let failAlert = NSAlert()
+                                            failAlert.messageText = "Ollama Not Responding"
+                                            failAlert.informativeText = "Ollama was started but isn't responding yet. Try again in a moment."
+                                            failAlert.alertStyle = .warning
+                                            failAlert.addButton(withTitle: "OK")
+                                            failAlert.runModal()
+                                        }
+                                    }
+                                }
+                            } else {
+                                // Failed to start
+                                let errorAlert = NSAlert()
+                                errorAlert.messageText = "Failed to Start Ollama"
+                                errorAlert.informativeText = result.error ?? "Unknown error"
+                                errorAlert.alertStyle = .critical
+                                errorAlert.addButton(withTitle: "OK")
+                                errorAlert.runModal()
+                            }
+                        }
                     }
                 }
             }

@@ -135,3 +135,23 @@
 
 **Commit**: 23e8dca - Consolidate reset onboarding into build script
 
+
+## 2026-01-21 - Treat closing onboarding on final step as completion
+
+**User Request**: "One more small thing is that if the onboarding is on the final page where you have to hit finish and in case there the person hits the cross icon instead, then we should still consider it as completed."
+
+**Implementation**: Modified windowWillClose logic in AppDelegate to check the current onboarding step. If user is on step 4 (the final "You're All Set!" page), closing the window is treated as completion instead of dismissal.
+
+**Behavior**:
+- **On final step (step 4)**: Closing window = mark as complete, initialize services, stay running
+- **On earlier steps (0-3)**: Closing window = quit app (existing behavior)
+
+**Code changes**:
+- Check currentOnboardingStep from UserDefaults in windowWillClose
+- If step == 4: mark complete, remove step tracking, update menu, initialize services
+- If step < 4: quit app as before
+
+**Result**: More forgiving UX - users don't need to click "Finish" if they're already on the final page.
+
+**Commit**: e4dcb9f - Treat closing onboarding on final step as completion
+

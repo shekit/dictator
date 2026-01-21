@@ -49,6 +49,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         recordingService?.shutdown()
         recordingService = nil
         statusBarController = nil
+        OllamaManager.shared.stopOllamaServer()
     }
 
     private func terminate() {
