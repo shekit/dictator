@@ -167,6 +167,9 @@ final class StatusBarController {
 
         // Build initial menu
         updateMenuForOnboardingStatus()
+
+        // Assign menu to status item
+        statusItem.menu = menu
     }
 
     private func updateMenuForOnboardingStatus() {

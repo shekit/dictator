@@ -47,3 +47,17 @@
 
 **Commit**: 461ac5b - Simplify onboarding UX - always auto-show until complete
 
+
+## 2026-01-21 - Add fn key label to onboarding
+
+**User Feedback**: "on the first onboarding page where you have that large FN key in blue, that icon doesn't really look like a key. So, just to clarify that it's a key, maybe put a small text under FN, where it says FN, just put FN key as a small text"
+
+**Implementation**: Added small caption text "fn key" directly under the large fn button graphic to clarify it's a keyboard key.
+
+**Code changes**:
+- Wrapped fn button ZStack in a VStack with 4pt spacing
+- Added Text("fn key") with .caption font and .secondary color
+- Maintains visual hierarchy while adding clarity
+
+**Commit**: 50392a3 - Add 'fn key' label to clarify keyboard key on onboarding
+
