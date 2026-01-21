@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 import Combine
 
 @MainActor
@@ -19,6 +20,7 @@ final class StatusBarController {
     private let statusItem: NSStatusItem
     private let menu = NSMenu()
     private let quitItem: NSMenuItem
+    private let settingsItem: NSMenuItem
     private let statusMenuItem = NSMenuItem()
     private let llmStatusMenuItem = NSMenuItem()
     private var modeSubmenu = NSMenu()
@@ -29,6 +31,7 @@ final class StatusBarController {
     private var recordingService: RecordingService?
     private var llmService: LLMService?
     private var cancellables = Set<AnyCancellable>()
+    private var settingsWindowController: NSWindowController?
 
     private let normalIcon = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: "Dictator")
     private let recordingIcon = NSImage(systemSymbolName: "mic.circle.fill", accessibilityDescription: "Recording")
@@ -42,6 +45,7 @@ final class StatusBarController {
     init(quitAction: @escaping () -> Void) {
         self.quitAction = quitAction
         self.quitItem = NSMenuItem(title: "Quit Dictator", action: nil, keyEquivalent: "q")
+        self.settingsItem = NSMenuItem(title: "Settings...", action: nil, keyEquivalent: ",")
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
 
         configureButton()
@@ -154,6 +158,9 @@ final class StatusBarController {
         quitItem.target = self
         quitItem.action = #selector(handleQuit)
 
+        settingsItem.target = self
+        settingsItem.action = #selector(handleSettings)
+
         // Status display item (disabled, just for info)
         statusMenuItem.title = "Status: Ready"
         statusMenuItem.isEnabled = false
@@ -185,6 +192,7 @@ final class StatusBarController {
             cloudModelMenuItem,
             localModelMenuItem,
             NSMenuItem.separator(),
+            settingsItem,
             quitItem
         ]
         statusItem.menu = menu
@@ -356,6 +364,30 @@ final class StatusBarController {
             setIconState(.error)
             statusMenuItem.title = "Error: \(message)"
         }
+    }
+
+    @objc private func handleSettings() {
+        // Create settings window if it doesn't exist
+        if settingsWindowController == nil {
+            guard let service = llmService else { return }
+
+            let settingsView = SettingsWindow(llmService: service)
+            let hostingController = NSHostingController(rootView: settingsView)
+
+            let window = NSWindow(contentViewController: hostingController)
+            window.title = "Dictator Settings"
+            window.styleMask = [.titled, .closable, .miniaturizable]
+            window.setContentSize(NSSize(width: 600, height: 500))
+            window.center()
+
+            let windowController = NSWindowController(window: window)
+            settingsWindowController = windowController
+        }
+
+        // Show the window
+        settingsWindowController?.showWindow(nil)
+        settingsWindowController?.window?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     @objc private func handleQuit() {

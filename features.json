@@ -477,7 +477,7 @@
             "Click 'Settings...'",
             "Settings window opens"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "7.2",
@@ -487,7 +487,7 @@
             "Tabs visible: Prompts, Dictionary, History, Settings",
             "Can click between tabs"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "7.3",
@@ -498,7 +498,7 @@
             "Can edit the prompt text",
             "Changes are saved"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "7.4",
@@ -508,7 +508,7 @@
             "Toggle off: advanced prompt not used",
             "Toggle on: advanced prompt is used"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "7.5",
@@ -519,7 +519,7 @@
             "Can edit existing terms",
             "Can delete terms"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "7.6",
@@ -530,7 +530,7 @@
             "Can record new hotkey",
             "New hotkey works after saving"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "7.7",
@@ -540,7 +540,7 @@
             "Shows masked key or 'Not configured'",
             "Shows path to .env file for editing"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "7.8",
@@ -550,7 +550,7 @@
             "Cloud model dropdown (OpenRouter models)",
             "Selections persist"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "7.9",
@@ -561,7 +561,7 @@
             "Relaunch app",
             "All settings retained"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "7.10",
@@ -571,7 +571,7 @@
             "Perform transcription",
             "Output reflects the custom prompt"
           ],
-          "passes": false
+          "passes": true
         }
       ]
     },
