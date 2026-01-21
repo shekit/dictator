@@ -81,20 +81,26 @@ struct OnboardingWindow: View {
                 if currentStep == 0 {
                     VStack(spacing: 12) {
                         // Large fn key icon
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Color.blue.opacity(0.1))
-                                .frame(width: 80, height: 80)
+                        VStack(spacing: 4) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.blue.opacity(0.1))
+                                    .frame(width: 80, height: 80)
 
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.blue, lineWidth: 2)
-                                .frame(width: 80, height: 80)
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.blue, lineWidth: 2)
+                                    .frame(width: 80, height: 80)
 
-                            Text("fn")
-                                .font(.system(size: 32, weight: .semibold, design: .rounded))
-                                .foregroundColor(.blue)
+                                Text("fn")
+                                    .font(.system(size: 32, weight: .semibold, design: .rounded))
+                                    .foregroundColor(.blue)
+                            }
+                            .padding(.top, 8)
+
+                            Text("fn key")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
                         }
-                        .padding(.top, 8)
 
                         Text("Hold, speak, release")
                             .font(.subheadline)

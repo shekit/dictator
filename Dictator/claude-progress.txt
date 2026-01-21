@@ -26,3 +26,24 @@
 
 **Commit**: 8b8e921 - Implement hybrid onboarding UX with dismissal tracking
 
+
+## 2026-01-21 - Simplified Onboarding UX
+
+**User Feedback**: "I think we can simplify this, there don't need to be like three dismissals before you stop showing, just always show it till the onboarding has been completed."
+
+**Change**: Removed dismissal count tracking complexity. New simpler behavior:
+- Always auto-show onboarding on launch if not completed (no dismissal limit)
+- "Complete Setup..." menu item always available if not completed
+- User can dismiss and re-launch, onboarding will always show again
+- Services initialize even if onboarding dismissed (app remains usable)
+
+**Code changes**:
+- Removed onboardingDismissalCount UserDefaults tracking
+- Simplified launch logic to just check hasCompletedOnboarding boolean
+- Removed dismissal count increment logic from windowWillClose
+- Kept manual "Complete Setup..." menu item access
+
+**Result**: Much simpler and more predictable UX. Onboarding always shows until completed, with optional manual access via menu.
+
+**Commit**: 461ac5b - Simplify onboarding UX - always auto-show until complete
+
