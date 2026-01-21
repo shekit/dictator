@@ -385,7 +385,7 @@
             "App detects Ollama at localhost:11434",
             "Console logs 'Ollama available'"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "6.2",
@@ -395,7 +395,7 @@
             "Receive valid response",
             "Response contains generated text"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "6.3",
@@ -406,7 +406,7 @@
             "Output is 'Hello.'",
             "Processing happened via Ollama"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "6.4",
@@ -417,7 +417,7 @@
             "Select different model (e.g., llama3.2, mistral)",
             "Next transcription uses selected model"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "6.5",
@@ -428,7 +428,7 @@
             "Can switch between Local and Cloud",
             "Mode persists across sessions"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "6.6",
@@ -437,7 +437,7 @@
             "Set mode to Local",
             "Menu shows indicator that mode is offline/local"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "6.7",
@@ -448,7 +448,7 @@
             "Attempt transcription",
             "App shows helpful error: 'Ollama not running'"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "6.8",
@@ -459,7 +459,7 @@
             "Hold hotkey, say 'um testing offline mode', release",
             "Cleaned text 'Testing offline mode.' appears"
           ],
-          "passes": false
+          "passes": true
         }
       ]
     },

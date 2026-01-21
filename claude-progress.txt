@@ -220,3 +220,56 @@ This file tracks progress across coding sessions. Append new entries at the bott
 
 ---
 
+## Session 6 - 2026-01-20 (Phase 6 Complete)
+- Implemented all Phase 6 features (6.1 - 6.8)
+- Created OllamaClient for local LLM processing
+- Integrated Ollama with the existing 3-prompt system
+- Added mode selection (Cloud/Local/Off) to menu bar
+- Added local model selection with auto-discovery
+
+### Files Created
+- Dictator/Sources/Dictator/LLM/OllamaClient.swift
+
+### Files Modified
+- Dictator/Sources/Dictator/LLM/LLMService.swift (added Ollama integration)
+- Dictator/Sources/Dictator/UI/StatusBarController.swift (added mode toggle, local model selection)
+
+### Implementation Details
+- OllamaClient: Actor-based HTTP client for Ollama API
+  - Health check via /api/tags endpoint
+  - Model listing with size and metadata
+  - Generate endpoint with system prompt support
+  - Comprehensive error handling (not running, no models, model not found)
+- LLMService updates:
+  - Added selectedLocalModel property with persistence
+  - Added availableLocalModels list (auto-refreshed)
+  - Added isOllamaAvailable flag
+  - processWithOllama() uses same 3-prompt system as cloud
+  - Ollama status refreshed on init and mode change
+- StatusBarController updates:
+  - Mode submenu: Cloud (OpenRouter) / Local (Ollama) / Off (Raw Text)
+  - Cloud Model submenu: 8 OpenRouter models
+  - Local Model submenu: Auto-populated from Ollama, shows model size
+  - "[Offline]" indicator when in local mode with Ollama available
+  - Warning dialogs when switching to unavailable mode
+
+### Menu Bar Changes
+- "Processing Mode" submenu with Cloud/Local/Off options
+- "Cloud Model" submenu (enabled only in Cloud mode)
+- "Local Model" submenu (enabled only in Local mode, shows installed models)
+- Status line shows "[Offline]" indicator when using local processing
+
+### Verification
+- `swift build` succeeds without errors
+- App bundle created at Dictator/Dictator.app
+- Ollama detected at localhost:11434
+- Local model (llama3.2:3b) discovered and selectable
+- Mode selection persists across restarts
+- Graceful error handling when Ollama not running
+
+### Current State
+- Phase 6 complete (8/8 features passing)
+- Next: Phase 7, Feature 7.1 (Settings menu item opens window)
+
+---
+

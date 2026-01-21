@@ -46,6 +46,10 @@ final class LLMService: ObservableObject {
         didSet { saveSettings() }
     }
 
+    @Published var selectedLocalModel: String = OllamaClient.defaultModel {
+        didSet { saveSettings() }
+    }
+
     @Published var advancedPromptEnabled: Bool = true {
         didSet { saveSettings() }
     }
@@ -58,14 +62,22 @@ final class LLMService: ObservableObject {
         didSet { saveSettings() }
     }
 
+    /// Cached list of available Ollama models
+    @Published var availableLocalModels: [OllamaClient.ModelInfo] = []
+
+    /// Whether Ollama is currently available
+    @Published var isOllamaAvailable: Bool = false
+
     // MARK: - Properties
 
     private let openRouterClient = OpenRouterClient()
+    private let ollamaClient = OllamaClient()
     private let defaults = UserDefaults.standard
 
     // UserDefaults keys
     private let kProcessingMode = "llm.processingMode"
     private let kSelectedCloudModel = "llm.selectedCloudModel"
+    private let kSelectedLocalModel = "llm.selectedLocalModel"
     private let kAdvancedPromptEnabled = "llm.advancedPromptEnabled"
     private let kDictionaryEntries = "llm.dictionaryEntries"
     private let kCustomMainPrompt = "llm.customMainPrompt"
@@ -98,9 +110,37 @@ final class LLMService: ObservableObject {
 
     private init() {
         loadSettings()
+        // Check Ollama availability on init
+        Task {
+            await refreshOllamaStatus()
+        }
     }
 
     // MARK: - Public Methods
+
+    /// Refresh Ollama availability status and model list.
+    func refreshOllamaStatus() async {
+        let available = await ollamaClient.checkHealth()
+        await MainActor.run {
+            self.isOllamaAvailable = available
+        }
+
+        if available {
+            do {
+                let models = try await ollamaClient.listModels()
+                await MainActor.run {
+                    self.availableLocalModels = models
+                    print("[LLMService] Found \(models.count) Ollama models: \(models.map { $0.name }.joined(separator: ", "))")
+                }
+            } catch {
+                print("[LLMService] Failed to list Ollama models: \(error.localizedDescription)")
+            }
+        } else {
+            await MainActor.run {
+                self.availableLocalModels = []
+            }
+        }
+    }
 
     /// Process transcription through LLM for cleanup.
     /// Returns the original text if processing is disabled or fails.
@@ -116,7 +156,7 @@ final class LLMService: ObservableObject {
             return (rawText, false)
         }
 
-        // For cloud mode (Phase 5), use OpenRouter
+        // For cloud mode, use OpenRouter
         if processingMode == .cloud {
             do {
                 let cleanedText = try await processWithOpenRouter(rawText)
@@ -128,10 +168,16 @@ final class LLMService: ObservableObject {
             }
         }
 
-        // For local mode (Phase 6), return raw for now
+        // For local mode, use Ollama
         if processingMode == .local {
-            print("[LLMService] Local mode not yet implemented, returning raw text")
-            return (rawText, false)
+            do {
+                let cleanedText = try await processWithOllama(rawText)
+                return (cleanedText, true)
+            } catch {
+                print("[LLMService] Ollama processing failed: \(error.localizedDescription)")
+                // Fall back to raw text on error
+                return (rawText, false)
+            }
         }
 
         return (rawText, false)
@@ -152,7 +198,11 @@ final class LLMService: ObservableObject {
                 return "Cloud: No API Key"
             }
         case .local:
-            return "Local: Ollama"
+            if isOllamaAvailable {
+                return "Local: \(selectedLocalModelName)"
+            } else {
+                return "Local: Ollama Not Running"
+            }
         case .off:
             return "LLM: Off"
         }
@@ -166,6 +216,15 @@ final class LLMService: ObservableObject {
             return parts.first ?? model.name
         }
         return selectedCloudModel.components(separatedBy: "/").last ?? selectedCloudModel
+    }
+
+    /// Get short name for current local model.
+    var selectedLocalModelName: String {
+        // Remove :latest suffix if present
+        if selectedLocalModel.hasSuffix(":latest") {
+            return String(selectedLocalModel.dropLast(7))
+        }
+        return selectedLocalModel
     }
 
     // MARK: - Dictionary Management
@@ -214,6 +273,27 @@ final class LLMService: ObservableObject {
         return response.content
     }
 
+    private func processWithOllama(_ rawText: String) async throws -> String {
+        let systemPrompt = buildSystemPrompt()
+
+        print("[LLMService] Sending to Ollama (model: \(selectedLocalModel))")
+
+        let response = try await ollamaClient.generate(
+            prompt: rawText,
+            systemPrompt: systemPrompt,
+            model: selectedLocalModel
+        )
+
+        print("[LLMService] Ollama response: '\(response.response)'")
+
+        if let duration = response.totalDuration {
+            let durationMs = Double(duration) / 1_000_000
+            print("[LLMService] Processing time: \(String(format: "%.0f", durationMs))ms")
+        }
+
+        return response.response
+    }
+
     private func buildSystemPrompt() -> String {
         var prompt = customMainPrompt ?? Self.defaultMainPrompt
 
@@ -247,6 +327,11 @@ final class LLMService: ObservableObject {
             selectedCloudModel = model
         }
 
+        // Local model
+        if let model = defaults.string(forKey: kSelectedLocalModel) {
+            selectedLocalModel = model
+        }
+
         // Advanced prompt toggle
         if defaults.object(forKey: kAdvancedPromptEnabled) != nil {
             advancedPromptEnabled = defaults.bool(forKey: kAdvancedPromptEnabled)
@@ -261,12 +346,13 @@ final class LLMService: ObservableObject {
         // Custom main prompt
         customMainPrompt = defaults.string(forKey: kCustomMainPrompt)
 
-        print("[LLMService] Settings loaded: mode=\(processingMode.rawValue), model=\(selectedCloudModel), advancedPrompt=\(advancedPromptEnabled), dictionary=\(dictionaryEntries.count) entries")
+        print("[LLMService] Settings loaded: mode=\(processingMode.rawValue), cloudModel=\(selectedCloudModel), localModel=\(selectedLocalModel), advancedPrompt=\(advancedPromptEnabled), dictionary=\(dictionaryEntries.count) entries")
     }
 
     private func saveSettings() {
         defaults.set(processingMode.rawValue, forKey: kProcessingMode)
         defaults.set(selectedCloudModel, forKey: kSelectedCloudModel)
+        defaults.set(selectedLocalModel, forKey: kSelectedLocalModel)
         defaults.set(advancedPromptEnabled, forKey: kAdvancedPromptEnabled)
         defaults.set(customMainPrompt, forKey: kCustomMainPrompt)
 
