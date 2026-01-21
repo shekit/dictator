@@ -325,3 +325,60 @@ This file tracks progress across coding sessions. Append new entries at the bott
 
 ---
 
+
+## Session 8 - 2026-01-21 (Phase 8 Complete)
+- Implemented all Phase 8 features (8.1 - 8.9)
+- Created comprehensive stats tracking and transcription logging system
+- Added History and Stats tabs to Settings window
+- Added today's stats display to menu bar
+
+### Files Created
+- Dictator/Sources/Dictator/Stats/StatsService.swift
+- Dictator/Sources/Dictator/Stats/TranscriptionLogger.swift
+
+### Files Modified
+- Dictator/Sources/Dictator/App/AppDelegate.swift (stats and logging integration)
+- Dictator/Sources/Dictator/UI/StatusBarController.swift (stats menu item)
+- Dictator/Sources/Dictator/UI/SettingsWindow.swift (History and Stats tabs)
+
+### Implementation Details
+- StatsService: Singleton service for tracking usage statistics
+  - Word count calculation from transcription text
+  - WPM (words per minute) calculation from word count and duration
+  - Daily stats aggregation with automatic rollover at midnight
+  - Persistence via UserDefaults (last 365 days retained)
+  - Today, week, and all-time aggregations
+  - Published properties for SwiftUI observation
+- TranscriptionLogger: Actor-based JSONL file logger
+  - Logs to ~/Documents/Dictator/transcriptions.jsonl
+  - Each entry contains: timestamp, rawText, cleanedText, wordCount, duration, wpm, mode, model
+  - ISO 8601 timestamps with fractional seconds
+  - Thread-safe async operations
+  - Recent entries retrieval for UI display
+- StatusBarController updates:
+  - Added statsMenuItem showing "Today: X words | Y WPM"
+  - Updates after each transcription via updateTodayStats()
+  - Shows "No recordings yet" when count is 0
+- SettingsWindow updates:
+  - Added History tab with scrollable list of past transcriptions
+  - Added Stats tab with today/week/all-time statistics in card layout
+  - History shows: timestamp, word count, WPM, mode, cleaned text, raw text (if different)
+  - Stats shows: total words, total recordings, average WPM for each time period
+- AppDelegate integration:
+  - onTranscriptionComplete callback records stats and logs to file
+  - Automatically updates menu bar stats after each transcription
+  - Captures mode and model info for logging
+
+### Verification
+- `swift build` succeeds without errors or warnings
+- App bundle created at Dictator/Dictator.app
+- Stats menu item shows "Today: No recordings yet" on fresh install
+- History tab appears in Settings with all 5 tabs visible
+- Stats tab shows beautiful stat cards with icons
+- All stats properly calculated and displayed
+
+### Current State
+- Phase 8 complete (9/9 features passing)
+- Next: Phase 9, Feature 9.1 (Sound feedback on recording start)
+
+---
