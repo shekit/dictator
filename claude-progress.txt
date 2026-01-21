@@ -49,3 +49,42 @@ This file tracks progress across coding sessions. Append new entries at the bott
 
 ---
 
+## Session 2 - 2026-01-20 (Phase 2 Complete)
+- Implemented all Phase 2 features (2.1 - 2.7)
+- Created GlobalHotkeyManager for Ctrl+Option+Space detection using CGEvent tap
+- Created AudioRecorder with AVAudioEngine for microphone capture
+- Created RecordingService to coordinate hotkey + audio
+- Updated StatusBarController with visual indicators
+
+### Files Created
+- Dictator/Sources/Dictator/Audio/GlobalHotkeyManager.swift
+- Dictator/Sources/Dictator/Audio/AudioRecorder.swift
+- Dictator/Sources/Dictator/Audio/RecordingService.swift
+
+### Files Modified
+- Dictator/Sources/Dictator/UI/StatusBarController.swift (added recording state icons)
+- Dictator/Sources/Dictator/App/AppDelegate.swift (integrated RecordingService)
+
+### Implementation Details
+- CGEvent tap with health monitoring (re-enables if disabled by macOS)
+- Thread-safe audio buffer with NSLock for concurrent access
+- AVAudioEngine stored as AnyObject to avoid Combine reflection crashes
+- Delayed initialization (1.5s) to avoid race conditions at launch
+- Menu bar icon changes: mic.fill (idle) -> mic.circle.fill (recording) -> mic.slash.fill (error)
+- Accessibility permission prompt via AXIsProcessTrustedWithOptions
+- Microphone permission handling with helpful error messages
+
+### Verification
+- `swift build` succeeds without errors
+- App bundle created at Dictator/Dictator.app
+- Hotkey: Ctrl+Option+Space (hold to record, release to stop)
+- Console logs show hotkey events and buffer sizes
+- Menu bar icon changes during recording
+- Graceful error handling for missing permissions
+
+### Current State
+- Phase 2 complete (7/7 features passing)
+- Next: Phase 3, Feature 3.1 (Add FluidAudio dependency)
+
+---
+

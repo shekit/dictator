@@ -65,7 +65,7 @@
             "Press Ctrl+Option+Space",
             "Console logs 'Hotkey pressed'"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "2.2",
@@ -74,7 +74,7 @@
             "Press and HOLD Ctrl+Option+Space",
             "Console logs 'Recording started' immediately on key down"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "2.3",
@@ -83,7 +83,7 @@
             "Hold Ctrl+Option+Space, then release",
             "Console logs 'Recording stopped' on key up"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "2.4",
@@ -95,7 +95,7 @@
             "Grant permission",
             "Recording works"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "2.5",
@@ -106,7 +106,7 @@
             "Console logs buffer size > 0",
             "Audio duration approximately matches speaking time"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "2.6",
@@ -117,7 +117,7 @@
             "Release hotkey",
             "Icon returns to normal"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "2.7",
@@ -127,7 +127,7 @@
             "Try to record",
             "App shows helpful error, does not crash"
           ],
-          "passes": false
+          "passes": true
         }
       ]
     },
