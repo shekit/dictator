@@ -10,14 +10,13 @@ Option 1 - Quick Install (Recommended):
   4. Double-click Dictator.app to launch
 
 Option 2 - Manual Install:
-  1. Right-click Dictator.app
-  2. Click "Open" (not double-click!)
-  3. Click "Open" in the security dialog
-  4. App will launch
-
-Option 3 - Terminal Command:
-  Open Terminal and run:
-  xattr -cr /path/to/Dictator.app
+  1. Drag Dictator.app to your Applications folder
+  2. Open Terminal and run:
+     xattr -cr /Applications/Dictator.app
+  3. Right-click Dictator.app in Applications
+  4. Click "Open" (not double-click!)
+  5. Click "Open" in the security dialog
+  6. App will launch
 
 FIRST LAUNCH:
   - Follow the onboarding to grant Microphone and Accessibility permissions
