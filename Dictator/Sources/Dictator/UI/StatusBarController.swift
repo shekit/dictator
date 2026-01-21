@@ -21,10 +21,12 @@ final class StatusBarController {
     private let menu = NSMenu()
     private let quitItem: NSMenuItem
     private let settingsItem: NSMenuItem
+    private let completeSetupItem: NSMenuItem
     private let statusMenuItem = NSMenuItem()
     private let statsMenuItem = NSMenuItem()
     private var modeMenuItems: [NSMenuItem] = []
     private let quitAction: () -> Void
+    private var isOnboardingComplete = true
 
     private var recordingService: RecordingService?
     private var llmService: LLMService?
@@ -44,6 +46,7 @@ final class StatusBarController {
         self.quitAction = quitAction
         self.quitItem = NSMenuItem(title: "Quit Dictator", action: nil, keyEquivalent: "q")
         self.settingsItem = NSMenuItem(title: "Settings...", action: nil, keyEquivalent: ",")
+        self.completeSetupItem = NSMenuItem(title: "Complete Setup...", action: nil, keyEquivalent: "")
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
 
         configureButton()
@@ -87,6 +90,12 @@ final class StatusBarController {
 
         // Initial update
         updateLLMMenuItems()
+    }
+
+    /// Set onboarding completion status and update menu
+    func setOnboardingComplete(_ isComplete: Bool) {
+        isOnboardingComplete = isComplete
+        updateMenuForOnboardingStatus()
     }
 
     /// Update the menu bar icon state.
@@ -146,6 +155,9 @@ final class StatusBarController {
         settingsItem.target = self
         settingsItem.action = #selector(handleSettings)
 
+        completeSetupItem.target = self
+        completeSetupItem.action = #selector(handleCompleteSetup)
+
         // Stats display item (disabled, just for info)
         updateTodayStats()
         statsMenuItem.isEnabled = false
@@ -153,6 +165,11 @@ final class StatusBarController {
         // Build mode menu items
         buildModeMenuItems()
 
+        // Build initial menu
+        updateMenuForOnboardingStatus()
+    }
+
+    private func updateMenuForOnboardingStatus() {
         // Build menu with mode items directly in main menu
         var menuItems: [NSMenuItem] = [
             statsMenuItem,
@@ -160,14 +177,22 @@ final class StatusBarController {
         ]
         menuItems.append(contentsOf: modeMenuItems)
         menuItems.append(contentsOf: [
-            NSMenuItem.separator(),
+            NSMenuItem.separator()
+        ])
+
+        // Add "Complete Setup..." if onboarding not complete
+        if !isOnboardingComplete {
+            menuItems.append(completeSetupItem)
+            menuItems.append(NSMenuItem.separator())
+        }
+
+        menuItems.append(contentsOf: [
             settingsItem,
             NSMenuItem.separator(),
             quitItem
         ])
 
         menu.items = menuItems
-        statusItem.menu = menu
     }
 
     private func buildModeMenuItems() {
@@ -298,6 +323,13 @@ final class StatusBarController {
         settingsWindowController?.showWindow(nil)
         settingsWindowController?.window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    @objc private func handleCompleteSetup() {
+        // Get the app delegate and show onboarding
+        if let appDelegate = NSApp.delegate as? AppDelegate {
+            appDelegate.showOnboarding()
+        }
     }
 
     @objc private func handleQuit() {

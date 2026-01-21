@@ -26,11 +26,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Check if this is first run or onboarding was interrupted (DO NOT create RecordingService yet to avoid permission prompts)
         let hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
         let hasOnboardingInProgress = UserDefaults.standard.object(forKey: "currentOnboardingStep") != nil
+        let dismissalCount = UserDefaults.standard.integer(forKey: "onboardingDismissalCount")
 
-        if !hasCompletedOnboarding || hasOnboardingInProgress {
-            // Show onboarding on next run loop after UI is ready (will resume from saved step if interrupted)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-                self?.showOnboarding()
+        if !hasCompletedOnboarding {
+            // Show onboarding on next run loop after UI is ready if:
+            // 1. Not completed AND
+            // 2. Dismissed fewer than 3 times OR has in-progress step
+            if dismissalCount < 3 || hasOnboardingInProgress {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                    self?.showOnboarding()
+                }
+            } else {
+                // Initialize services even though onboarding not complete (user can access via menu)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+                    self?.initializeServices()
+                }
             }
         } else {
             // Only initialize if onboarding is complete
@@ -40,6 +50,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.initializeServices()
             }
         }
+
+        // Pass onboarding status to status bar for menu item
+        statusBarController?.setOnboardingComplete(hasCompletedOnboarding)
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -121,18 +134,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func showOnboarding() {
+    /// Show onboarding window (can be called from menu or on launch)
+    func showOnboarding() {
+        // If already showing, just bring to front
+        if let existingWindow = onboardingWindowController?.window {
+            existingWindow.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+
         let onboardingView = OnboardingWindow { [weak self] in
             // Mark onboarding as complete
             UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
+            UserDefaults.standard.set(0, forKey: "onboardingDismissalCount") // Reset dismissal count
             print("[App] Onboarding completed")
 
             // Close onboarding window
             self?.onboardingWindowController?.close()
             self?.onboardingWindowController = nil
 
-            // Initialize services now that onboarding is complete
-            self?.initializeServices()
+            // Update menu item visibility
+            self?.statusBarController?.setOnboardingComplete(true)
+
+            // Initialize services now that onboarding is complete (only if not already initialized)
+            if self?.recordingService == nil {
+                self?.initializeServices()
+            }
         }
 
         let hostingController = NSHostingController(rootView: onboardingView)
@@ -143,11 +170,44 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.center()
         window.level = .floating  // Keep on top
 
+        // Set delegate to track window closing
+        window.delegate = self
+
         let windowController = NSWindowController(window: window)
         onboardingWindowController = windowController
 
         windowController.showWindow(nil)
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+    }
+}
+
+// MARK: - NSWindowDelegate
+
+extension AppDelegate: NSWindowDelegate {
+    func windowWillClose(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow,
+              window == onboardingWindowController?.window else {
+            return
+        }
+
+        // Check if onboarding was actually completed
+        let hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
+
+        if !hasCompletedOnboarding {
+            // User closed window without completing - increment dismissal count
+            let currentCount = UserDefaults.standard.integer(forKey: "onboardingDismissalCount")
+            UserDefaults.standard.set(currentCount + 1, forKey: "onboardingDismissalCount")
+            print("[App] Onboarding dismissed (count: \(currentCount + 1))")
+
+            // Initialize services if needed (so app is still usable)
+            if recordingService == nil {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                    self?.initializeServices()
+                }
+            }
+        }
+
+        onboardingWindowController = nil
     }
 }
