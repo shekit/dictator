@@ -69,20 +69,48 @@ echo "💿 Creating DMG image..."
 DMG_TEMP="$DIST_DIR/temp.dmg"
 DMG_FINAL="$DIST_DIR/$APP_NAME-v$VERSION.dmg"
 
+# Safe cleanup of any stale mounts from THIS project only
+echo "🧹 Cleaning up any previous disk images..."
+
+# Only detach volume if it's exactly named "Dictator" (our app)
+if [ -d "/Volumes/$APP_NAME" ]; then
+    echo "  Detaching /Volumes/$APP_NAME..."
+    hdiutil detach "/Volumes/$APP_NAME" -force 2>/dev/null || true
+fi
+
+# Only detach images that match our specific dist directory paths
+hdiutil info | grep "$DIST_DIR" | grep "image-path" | sed 's/.*image-path[[:space:]]*:[[:space:]]*//' | while read image_path; do
+    # Get the device node for this specific image
+    STALE_DEV=$(hdiutil info | grep -B 10 "image-path.*$image_path" | grep "^/dev/" | head -1 | awk '{print $1}')
+    if [ -n "$STALE_DEV" ]; then
+        echo "  Detaching $STALE_DEV (from $image_path)..."
+        hdiutil detach "$STALE_DEV" -force 2>/dev/null || true
+    fi
+done
+
+# Remove old temp.dmg if it exists
+rm -f "$DMG_TEMP"
+
+sleep 1
+
 # Create temporary DMG (with extra space for filesystem overhead)
 hdiutil create -size 200m -fs HFS+ -volname "$APP_NAME" "$DMG_TEMP"
 
-# Mount the DMG
-hdiutil attach "$DMG_TEMP" -mountpoint /Volumes/$APP_NAME
+# Mount the DMG and capture the device node
+MOUNT_POINT="/Volumes/$APP_NAME"
+echo "📀 Mounting disk image..."
+ATTACH_OUTPUT=$(hdiutil attach "$DMG_TEMP" -mountpoint "$MOUNT_POINT" -nobrowse)
+DEVICE_NODE=$(echo "$ATTACH_OUTPUT" | grep "^/dev/" | head -1 | awk '{print $1}')
+echo "  Mounted at: $MOUNT_POINT ($DEVICE_NODE)"
 
 # Copy app to DMG
-cp -R "$APP_BUNDLE" "/Volumes/$APP_NAME/"
+cp -R "$APP_BUNDLE" "$MOUNT_POINT/"
 
 # Create Applications symlink for easy installation
-ln -s /Applications "/Volumes/$APP_NAME/Applications"
+ln -s /Applications "$MOUNT_POINT/Applications"
 
 # Add README
-cat > "/Volumes/$APP_NAME/README.txt" << EOF
+cat > "$MOUNT_POINT/README.txt" << EOF
 Dictator - Voice-to-Text with AI Cleanup
 =========================================
 
@@ -103,8 +131,31 @@ Usage:
 For more info: https://github.com/yourusername/dictator
 EOF
 
-# Unmount
-hdiutil detach "/Volumes/$APP_NAME"
+# Force sync to ensure all writes are flushed
+sync
+echo "⏳ Flushing writes to disk..."
+sleep 2
+
+# Unmount using the device node (more reliable than mount point)
+echo "📤 Ejecting disk image ($DEVICE_NODE)..."
+RETRIES=5
+for i in $(seq 1 $RETRIES); do
+    if hdiutil detach "$DEVICE_NODE" 2>/dev/null; then
+        echo "✅ Disk image ejected"
+        break
+    else
+        if [ $i -eq $RETRIES ]; then
+            echo "⚠️  Normal eject failed, forcing..."
+            hdiutil detach "$DEVICE_NODE" -force || {
+                echo "❌ Force eject failed. Trying mount point..."
+                hdiutil detach "$MOUNT_POINT" -force || true
+            }
+        else
+            echo "⏳ Retrying eject ($i/$RETRIES)..."
+            sleep 1
+        fi
+    fi
+done
 
 # Convert to compressed DMG
 hdiutil convert "$DMG_TEMP" -format UDZO -o "$DMG_FINAL"

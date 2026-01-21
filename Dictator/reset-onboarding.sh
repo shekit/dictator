@@ -18,6 +18,15 @@ tccutil reset Accessibility com.dictator.app 2>/dev/null || echo "    (Accessibi
 echo "  Clearing UserDefaults..."
 defaults delete com.dictator.app 2>/dev/null || echo "    (No UserDefaults found)"
 
+# Clear FluidAudio model cache (to simulate first-time download)
+echo "  Clearing FluidAudio model cache..."
+if [ -d ~/Library/Caches/com.fluidinference.fluidaudio ]; then
+    rm -rf ~/Library/Caches/com.fluidinference.fluidaudio
+    echo "    (Model cache removed - ~200MB will download on next launch)"
+else
+    echo "    (No model cache found)"
+fi
+
 # Optional: Clear transcription logs
 # Uncomment if you want to clear logs too
 # echo "  Clearing transcription logs..."

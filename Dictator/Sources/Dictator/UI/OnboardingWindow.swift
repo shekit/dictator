@@ -350,23 +350,39 @@ struct OnboardingWindow: View {
         print("[Onboarding] Starting model download...")
 
         Task {
-            // Simulate progress updates since FluidAudio doesn't provide progress callbacks
+            // Monitor actual download progress by checking cache directory
             let progressTask = Task {
-                // Gradually update progress over expected download time
-                for i in 1...30 {
-                    try? await Task.sleep(for: .seconds(1))
-                    await MainActor.run {
-                        // Slow progress updates (90% in 30 seconds, then wait for actual completion)
-                        downloadProgress = min(0.9, Double(i) * 0.03)
+                let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+                    .appendingPathComponent("com.fluidinference.fluidaudio/models/v2")
 
-                        if downloadProgress < 0.3 {
+                let expectedSize: Double = 200 * 1024 * 1024 // 200MB in bytes
+
+                while !Task.isCancelled {
+                    // Calculate actual size of downloaded files
+                    let actualSize = await getDirectorySize(at: cacheDir)
+                    let progress = min(1.0, Double(actualSize) / expectedSize)
+                    let downloadedMB = Double(actualSize) / (1024 * 1024)
+                    let totalMB = expectedSize / (1024 * 1024)
+                    let percentage = Int(progress * 100)
+
+                    await MainActor.run {
+                        downloadProgress = progress
+
+                        if progress < 0.01 {
                             downloadStatus = "Connecting to server..."
-                        } else if downloadProgress < 0.6 {
-                            downloadStatus = "Downloading models (~200MB)..."
+                        } else if progress < 1.0 {
+                            downloadStatus = String(format: "%.1f MB / %.0f MB (%d%%)", downloadedMB, totalMB, percentage)
                         } else {
-                            downloadStatus = "Almost done..."
+                            downloadStatus = "Finalizing..."
                         }
                     }
+
+                    // Log progress periodically
+                    if actualSize > 0 {
+                        print("[Onboarding] Download progress: \(String(format: "%.1f", downloadedMB)) MB / \(Int(totalMB)) MB (\(percentage)%)")
+                    }
+
+                    try? await Task.sleep(for: .seconds(1))
                 }
             }
 
@@ -374,7 +390,7 @@ struct OnboardingWindow: View {
                 // Actually download the models
                 try await TranscriptionService.shared.prepareModels()
 
-                // Cancel progress simulation
+                // Cancel progress monitoring
                 progressTask.cancel()
 
                 await MainActor.run {
@@ -384,7 +400,7 @@ struct OnboardingWindow: View {
                     print("[Onboarding] Models downloaded successfully")
                 }
             } catch {
-                // Cancel progress simulation
+                // Cancel progress monitoring
                 progressTask.cancel()
 
                 await MainActor.run {
@@ -395,6 +411,23 @@ struct OnboardingWindow: View {
                 }
             }
         }
+    }
+
+    private func getDirectorySize(at url: URL) async -> Int64 {
+        return await Task.detached {
+            guard FileManager.default.fileExists(atPath: url.path) else { return 0 }
+
+            var totalSize: Int64 = 0
+            if let enumerator = FileManager.default.enumerator(at: url, includingPropertiesForKeys: [.fileSizeKey], options: [.skipsHiddenFiles]) {
+                for case let fileURL as URL in enumerator {
+                    if let resourceValues = try? fileURL.resourceValues(forKeys: [.fileSizeKey]),
+                       let fileSize = resourceValues.fileSize {
+                        totalSize += Int64(fileSize)
+                    }
+                }
+            }
+            return totalSize
+        }.value
     }
 }
 
