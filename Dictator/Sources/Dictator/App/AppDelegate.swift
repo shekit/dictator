@@ -8,15 +8,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var onboardingWindowController: NSWindowController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Load environment variables first
+        // Load configuration
         EnvLoader.shared.load()
 
         // Log API key status
         if EnvLoader.shared.hasOpenRouterKey {
-            print("[App] OpenRouter API key loaded")
+            print("[App] OpenRouter API key configured")
         } else {
-            print("[App] No OpenRouter API key configured")
-            print("[App] Create a .env file with OPENROUTER_API_KEY=sk-or-...")
+            print("[App] No OpenRouter API key configured - add one in Settings")
         }
 
         // Create status bar controller

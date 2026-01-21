@@ -324,7 +324,7 @@ final class StatusBarController {
         if mode == .cloud && !EnvLoader.shared.hasOpenRouterKey {
             let alert = NSAlert()
             alert.messageText = "OpenRouter API Key Required"
-            alert.informativeText = "To use Cloud mode, add OPENROUTER_API_KEY to your .env file.\n\nExpected location: \(EnvLoader.shared.envFileLocation ?? "~/.env or ~/Documents/Dictator/.env")"
+            alert.informativeText = "To use Cloud mode, you need to add your OpenRouter API key.\n\nOpen Settings from the menu bar and enter your API key."
             alert.alertStyle = .warning
             alert.addButton(withTitle: "OK")
             alert.runModal()

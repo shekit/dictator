@@ -368,10 +368,6 @@ struct SettingsTabView: View {
                             Text("API key stored locally")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
-                        } else if let envPath = EnvLoader.shared.envFileLocation {
-                            Text("Using API key from: \(envPath)")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
                         } else {
                             Text("Add your API key to use cloud LLM processing")
                                 .font(.caption)

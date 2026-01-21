@@ -169,14 +169,26 @@ struct OnboardingWindow: View {
     }
 
     private func requestMicrophonePermission() {
-        // Open System Settings to Privacy & Security > Microphone
-        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone") {
-            NSWorkspace.shared.open(url)
+        // First trigger the permission request so app appears in System Settings
+        AVCaptureDevice.requestAccess(for: .audio) { granted in
+            print("[Onboarding] Microphone access \(granted ? "granted" : "denied")")
+
+            // Then open System Settings so user can see/change the permission
+            DispatchQueue.main.async {
+                if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone") {
+                    NSWorkspace.shared.open(url)
+                }
+            }
         }
     }
 
     private func openAccessibilitySettings() {
-        // Open System Settings to Privacy & Security > Accessibility
+        // First trigger an accessibility check so app appears in System Settings
+        // This call registers the app in the Accessibility list
+        let _ = AXIsProcessTrusted()
+        print("[Onboarding] Accessibility check triggered")
+
+        // Then open System Settings to Privacy & Security > Accessibility
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
             NSWorkspace.shared.open(url)
         }
