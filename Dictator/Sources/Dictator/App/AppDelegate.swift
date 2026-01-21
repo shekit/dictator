@@ -24,6 +24,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.terminate()
         }
 
+        // Check if this is first run (DO NOT create RecordingService yet to avoid permission prompts)
+        let hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
+        if !hasCompletedOnboarding {
+            // Show onboarding on next run loop after UI is ready
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                self?.showOnboarding()
+            }
+        } else {
+            // Only initialize if onboarding is complete
+            // CRITICAL: Delay service initialization to avoid race conditions
+            // Audio services need UI to be fully ready before initializing
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+                self?.initializeServices()
+            }
+        }
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        TranscriptionService.shared.cleanup()
+        recordingService?.shutdown()
+        recordingService = nil
+        statusBarController = nil
+    }
+
+    private func terminate() {
+        NSApp.terminate(nil)
+    }
+
+    private func initializeServices() {
         // Create recording service
         recordingService = RecordingService()
 
@@ -72,38 +101,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     )
                 }
             }
+
+            // Initialize the service
+            service.initialize()
         }
-
-        // Check if this is first run
-        let hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
-        if !hasCompletedOnboarding {
-            // Show onboarding on next run loop after UI is ready
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-                self?.showOnboarding()
-            }
-        } else {
-            // Only initialize if onboarding is complete
-            // CRITICAL: Delay service initialization to avoid race conditions
-            // Audio services need UI to be fully ready before initializing
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
-                self?.initializeServices()
-            }
-        }
-    }
-
-    func applicationWillTerminate(_ notification: Notification) {
-        TranscriptionService.shared.cleanup()
-        recordingService?.shutdown()
-        recordingService = nil
-        statusBarController = nil
-    }
-
-    private func terminate() {
-        NSApp.terminate(nil)
-    }
-
-    private func initializeServices() {
-        recordingService?.initialize()
 
         // Start loading ASR models in background
         // First recording will wait if not ready, but we start early for faster first use

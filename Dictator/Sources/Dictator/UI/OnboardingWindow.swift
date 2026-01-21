@@ -32,7 +32,7 @@ struct OnboardingWindow: View {
         OnboardingStep(
             icon: "key.fill",
             title: "API Key (Optional)",
-            description: "Enter your OpenRouter API key for cloud processing, or skip to use local Ollama.",
+            description: "",
             actionTitle: "Continue",
             action: .apiKeyInput
         ),
@@ -58,13 +58,15 @@ struct OnboardingWindow: View {
                 Text(steps[currentStep].title)
                     .font(.system(size: 26, weight: .bold))
 
-                // Description
-                Text(steps[currentStep].description)
-                    .font(.body)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 50)
-                    .fixedSize(horizontal: false, vertical: true)
+                // Description (only if not empty)
+                if !steps[currentStep].description.isEmpty {
+                    Text(steps[currentStep].description)
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 50)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
 
                 // API Key Input (only on API key step)
                 if steps[currentStep].action == .apiKeyInput {
