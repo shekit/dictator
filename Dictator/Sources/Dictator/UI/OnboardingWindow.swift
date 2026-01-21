@@ -18,8 +18,8 @@ struct OnboardingWindow: View {
         OnboardingStep(
             icon: "mic.fill",
             title: "Microphone Permission",
-            description: "Dictator needs access to your microphone to capture your voice.\n\nClick 'Grant Permission' to allow access in System Settings.",
-            actionTitle: "Grant Permission",
+            description: "Dictator needs access to your microphone to capture your voice.\n\nClick 'Open Settings' to grant permission in System Settings.",
+            actionTitle: "Open Settings",
             action: .requestMicrophone
         ),
         OnboardingStep(
@@ -32,7 +32,7 @@ struct OnboardingWindow: View {
         OnboardingStep(
             icon: "key.fill",
             title: "API Key (Optional)",
-            description: "For cloud LLM processing, enter your OpenRouter API key below.\n\nYou can get one at openrouter.ai\n\nYou can also use local Ollama models without an API key, or add this later in Settings.",
+            description: "For cloud LLM processing, enter your OpenRouter API key.\n\nGet one at openrouter.ai or skip to use local Ollama models.",
             actionTitle: "Continue",
             action: .apiKeyInput
         ),
@@ -47,16 +47,16 @@ struct OnboardingWindow: View {
     var body: some View {
         VStack(spacing: 0) {
             // Step Content
-            VStack(spacing: 30) {
+            VStack(spacing: 20) {
                 // Icon
                 Image(systemName: steps[currentStep].icon)
-                    .font(.system(size: 64))
+                    .font(.system(size: 60))
                     .foregroundColor(.blue)
-                    .padding(.top, 40)
+                    .padding(.top, 30)
 
                 // Title
                 Text(steps[currentStep].title)
-                    .font(.system(size: 28, weight: .bold))
+                    .font(.system(size: 26, weight: .bold))
 
                 // Description
                 Text(steps[currentStep].description)
@@ -148,14 +148,14 @@ struct OnboardingWindow: View {
     }
 
     private func requestMicrophonePermission() {
-        // Request microphone permission
-        AVCaptureDevice.requestAccess(for: .audio) { granted in
-            print("[Onboarding] Microphone permission: \(granted ? "granted" : "denied")")
+        // Open System Settings to Privacy & Security > Microphone
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone") {
+            NSWorkspace.shared.open(url)
         }
     }
 
     private func openAccessibilitySettings() {
-        // Open System Settings to Accessibility
+        // Open System Settings to Privacy & Security > Accessibility
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
             NSWorkspace.shared.open(url)
         }

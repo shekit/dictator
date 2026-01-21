@@ -40,65 +40,6 @@ struct AboutWindow: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
 
-            Divider()
-                .padding(.horizontal, 40)
-
-            // Technology Stack
-            VStack(spacing: 8) {
-                Text("Powered by")
-                    .font(.headline)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Image(systemName: "cpu")
-                            .foregroundColor(.blue)
-                        Text("FluidAudio (Parakeet STT)")
-                    }
-                    HStack {
-                        Image(systemName: "cloud")
-                            .foregroundColor(.green)
-                        Text("OpenRouter API (Cloud LLM)")
-                    }
-                    HStack {
-                        Image(systemName: "server.rack")
-                            .foregroundColor(.orange)
-                        Text("Ollama (Local LLM)")
-                    }
-                }
-                .font(.caption)
-                .foregroundColor(.secondary)
-            }
-
-            Divider()
-                .padding(.horizontal, 40)
-
-            // Links
-            VStack(spacing: 8) {
-                Button(action: {
-                    if let url = URL(string: "https://github.com/anthropics/dictator") {
-                        NSWorkspace.shared.open(url)
-                    }
-                }) {
-                    HStack {
-                        Image(systemName: "link")
-                        Text("GitHub Repository")
-                    }
-                }
-                .buttonStyle(.link)
-
-                Button(action: {
-                    if let url = URL(string: "https://github.com/FluidInference/FluidAudio") {
-                        NSWorkspace.shared.open(url)
-                    }
-                }) {
-                    HStack {
-                        Image(systemName: "waveform")
-                        Text("FluidAudio Project")
-                    }
-                }
-                .buttonStyle(.link)
-            }
-
             Spacer()
 
             // Copyright
