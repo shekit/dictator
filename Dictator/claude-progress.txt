@@ -196,3 +196,22 @@ User chose Option C (Smart Helper) with explicit requirement: "just one thing to
 
 **Commit**: 56a94c8 - Add smart Ollama server management with graceful error handling
 
+
+## 2026-01-21 - Add smart helper to open Settings for API key
+
+**User Request**: "right now when you don't have an API key entered and you click cloud as an option in the menu bar, it very nicely and correctly opens up a pop-up saying you need to enter an API key. But then it tells you where to go in settings as text. Can there be a button there that when you click opens the settings menu to the page where you need to enter it. So basically a smart helper for this as well"
+
+**Implementation**: Modified Cloud mode API key dialog to include smart helper button.
+
+**Changes**:
+- Dialog now shows two buttons: "Open Settings" and "Cancel"
+- Clicking "Open Settings" directly opens the Settings window (same as menu item)
+- Clicking "Cancel" dismisses dialog
+- Removed explanatory text about opening Settings (replaced with action button)
+
+**Pattern**: Matches the smart helper approach used for Ollama server management - offer direct action instead of just instructions.
+
+**Result**: Seamless UX - user can go directly from "API key missing" dialog to entering their API key with one click.
+
+**Commit**: 0efa4e9 - Add smart helper to open Settings when API key missing
+
