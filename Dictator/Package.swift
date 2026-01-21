@@ -19,7 +19,10 @@ let package = Package(
                 "FluidAudio",
             ],
             path: "Sources/Dictator",
-            exclude: ["Info.plist"]
+            exclude: ["Info.plist", "Resources/"],
+            resources: [
+                .copy("Resources/AppIcon.icns")
+            ]
         )
     ]
 )
