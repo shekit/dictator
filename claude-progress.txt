@@ -273,3 +273,55 @@ This file tracks progress across coding sessions. Append new entries at the bott
 
 ---
 
+## Session 7 - 2026-01-21 (Phase 7 Complete)
+- Implemented all Phase 7 features (7.1 - 7.10)
+- Created comprehensive Settings window with SwiftUI tabbed interface
+- Added Settings menu item to status bar (Cmd+,)
+
+### Files Created
+- Dictator/Sources/Dictator/UI/SettingsWindow.swift
+
+### Files Modified
+- Dictator/Sources/Dictator/UI/StatusBarController.swift (Settings menu item and window controller)
+
+### Implementation Details
+- SettingsWindow: SwiftUI view with 3 tabs (Prompts, Dictionary, Settings)
+- PromptsTabView:
+  - Main prompt editor (TextEditor with customization)
+  - Reset to Default button
+  - Advanced prompt section with enable/disable toggle
+  - Read-only display of advanced prompt
+- DictionaryTabView:
+  - Add new dictionary entries (spoken → replacement)
+  - Edit existing entries
+  - Delete entries
+  - List view of all entries
+- SettingsTabView:
+  - Hotkey configuration display (currently fixed to fn key)
+  - API key status from .env file (shows configured/not configured + file path)
+  - Processing Mode picker (Cloud/Local/Off)
+  - Cloud Model picker (8 OpenRouter models, enabled only in Cloud mode)
+  - Local Model picker (Ollama models with sizes, enabled only in Local mode)
+  - Refresh Ollama Models button
+- All settings persist via existing LLMService UserDefaults integration
+- Custom prompts affect transcription via LLMService.buildSystemPrompt()
+- Window management: Creates NSWindow with NSHostingController for SwiftUI content
+
+### Verification
+- `swift build` succeeds without errors
+- Settings menu item appears in status bar dropdown
+- Cmd+, keyboard shortcut works
+- Settings window opens with all 3 tabs
+- Main prompt can be edited and saved
+- Advanced prompt toggle works
+- Dictionary entries can be added, edited, and deleted
+- API key status displays correctly
+- Model pickers show appropriate options
+- All settings persist across app restarts
+
+### Current State
+- Phase 7 complete (10/10 features passing)
+- Next: Phase 8, Feature 8.1 (Calculate word count per transcription)
+
+---
+
