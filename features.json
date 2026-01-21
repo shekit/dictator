@@ -1,0 +1,770 @@
+{
+  "project": "Dictator",
+  "description": "macOS voice-to-text with LLM cleanup",
+  "phases": [
+    {
+      "phase": 1,
+      "name": "Shell",
+      "description": "Basic menu bar app that launches and quits",
+      "testable_outcome": "App launches, icon appears in menu bar, can quit",
+      "features": [
+        {
+          "id": "1.1",
+          "description": "Create Swift package with macOS app target",
+          "verification": [
+            "Run: swift build",
+            "Build succeeds without errors"
+          ],
+          "passes": false
+        },
+        {
+          "id": "1.2",
+          "description": "App appears as menu bar icon (NSStatusItem)",
+          "verification": [
+            "Run the app",
+            "Icon appears in macOS menu bar",
+            "No Dock icon appears"
+          ],
+          "passes": false
+        },
+        {
+          "id": "1.3",
+          "description": "Menu bar dropdown with Quit option",
+          "verification": [
+            "Click menu bar icon",
+            "Dropdown appears with 'Quit' option",
+            "Click Quit",
+            "App terminates"
+          ],
+          "passes": false
+        },
+        {
+          "id": "1.4",
+          "description": "App configured as LSUIElement (no Dock icon)",
+          "verification": [
+            "Run the app",
+            "No icon appears in Dock",
+            "App only visible in menu bar"
+          ],
+          "passes": false
+        }
+      ]
+    },
+    {
+      "phase": 2,
+      "name": "Audio Recording",
+      "description": "Hold hotkey to record audio from microphone",
+      "testable_outcome": "Hold hotkey, audio is captured, release stops recording",
+      "features": [
+        {
+          "id": "2.1",
+          "description": "Global hotkey registration (Ctrl+Option+Space)",
+          "verification": [
+            "App is running",
+            "Open any other app (e.g., TextEdit)",
+            "Press Ctrl+Option+Space",
+            "Console logs 'Hotkey pressed'"
+          ],
+          "passes": false
+        },
+        {
+          "id": "2.2",
+          "description": "Detect key down (hold) event",
+          "verification": [
+            "Press and HOLD Ctrl+Option+Space",
+            "Console logs 'Recording started' immediately on key down"
+          ],
+          "passes": false
+        },
+        {
+          "id": "2.3",
+          "description": "Detect key up (release) event",
+          "verification": [
+            "Hold Ctrl+Option+Space, then release",
+            "Console logs 'Recording stopped' on key up"
+          ],
+          "passes": false
+        },
+        {
+          "id": "2.4",
+          "description": "Request microphone permission",
+          "verification": [
+            "Fresh install or reset permissions",
+            "Start recording",
+            "macOS permission dialog appears",
+            "Grant permission",
+            "Recording works"
+          ],
+          "passes": false
+        },
+        {
+          "id": "2.5",
+          "description": "Capture audio to buffer using AVAudioEngine",
+          "verification": [
+            "Hold hotkey and speak 'testing one two three'",
+            "Release hotkey",
+            "Console logs buffer size > 0",
+            "Audio duration approximately matches speaking time"
+          ],
+          "passes": false
+        },
+        {
+          "id": "2.6",
+          "description": "Visual indicator during recording",
+          "verification": [
+            "Hold hotkey",
+            "Menu bar icon changes (color or animation)",
+            "Release hotkey",
+            "Icon returns to normal"
+          ],
+          "passes": false
+        },
+        {
+          "id": "2.7",
+          "description": "Handle missing microphone permission gracefully",
+          "verification": [
+            "Deny microphone permission in System Settings",
+            "Try to record",
+            "App shows helpful error, does not crash"
+          ],
+          "passes": false
+        }
+      ]
+    },
+    {
+      "phase": 3,
+      "name": "Speech-to-Text",
+      "description": "Convert recorded audio to text using FluidAudio",
+      "testable_outcome": "Speak into mic, raw transcription appears in console",
+      "features": [
+        {
+          "id": "3.1",
+          "description": "Add FluidAudio as Swift package dependency",
+          "verification": [
+            "Package.swift includes FluidAudio dependency",
+            "swift package resolve succeeds",
+            "Can import FluidAudio in code"
+          ],
+          "passes": false
+        },
+        {
+          "id": "3.2",
+          "description": "Download Parakeet model on first run",
+          "verification": [
+            "Delete ~/Library/Caches/FluidAudio/ if exists",
+            "Run app and trigger transcription",
+            "Model downloads (~2.5 GB)",
+            "Model files exist in cache directory"
+          ],
+          "passes": false
+        },
+        {
+          "id": "3.3",
+          "description": "Initialize AsrManager and load model",
+          "verification": [
+            "App starts",
+            "AsrManager initializes without error",
+            "Console logs 'ASR model loaded'"
+          ],
+          "passes": false
+        },
+        {
+          "id": "3.4",
+          "description": "Transcribe audio buffer to text",
+          "verification": [
+            "Hold hotkey, say 'hello world', release",
+            "Console logs transcription containing 'hello' and 'world'"
+          ],
+          "passes": false
+        },
+        {
+          "id": "3.5",
+          "description": "Handle empty or silent recordings",
+          "verification": [
+            "Hold hotkey for 1 second without speaking, release",
+            "App does not crash",
+            "Returns empty string or handles gracefully"
+          ],
+          "passes": false
+        },
+        {
+          "id": "3.6",
+          "description": "Show transcription status in menu bar",
+          "verification": [
+            "During transcription processing",
+            "Menu bar shows processing indicator",
+            "Indicator clears when done"
+          ],
+          "passes": false
+        }
+      ]
+    },
+    {
+      "phase": 4,
+      "name": "Text Injection",
+      "description": "Paste transcription at cursor position",
+      "testable_outcome": "Speak, text appears at cursor in any app",
+      "features": [
+        {
+          "id": "4.1",
+          "description": "Request Accessibility permission",
+          "verification": [
+            "App triggers text injection",
+            "macOS prompts for Accessibility permission",
+            "Permission can be granted in System Settings"
+          ],
+          "passes": false
+        },
+        {
+          "id": "4.2",
+          "description": "Save current clipboard contents",
+          "verification": [
+            "Copy some text to clipboard",
+            "Trigger text injection",
+            "Original clipboard is preserved (verified in step 4.5)"
+          ],
+          "passes": false
+        },
+        {
+          "id": "4.3",
+          "description": "Write transcription to clipboard",
+          "verification": [
+            "Transcription completes",
+            "Clipboard contains transcription text",
+            "Can manually Cmd+V to paste it"
+          ],
+          "passes": false
+        },
+        {
+          "id": "4.4",
+          "description": "Simulate Cmd+V keystroke",
+          "verification": [
+            "Open TextEdit with cursor in document",
+            "Complete transcription",
+            "Text appears at cursor without manual paste"
+          ],
+          "passes": false
+        },
+        {
+          "id": "4.5",
+          "description": "Restore original clipboard after injection",
+          "verification": [
+            "Copy 'ORIGINAL' to clipboard",
+            "Speak and let text inject",
+            "Wait 1 second",
+            "Cmd+V pastes 'ORIGINAL', not transcription"
+          ],
+          "passes": false
+        },
+        {
+          "id": "4.6",
+          "description": "End-to-end: speak to text in any app",
+          "verification": [
+            "Open Notes app",
+            "Place cursor in note",
+            "Hold hotkey, say 'this is a test', release",
+            "Text 'this is a test' appears in Notes"
+          ],
+          "passes": false
+        }
+      ]
+    },
+    {
+      "phase": 5,
+      "name": "LLM Processing (Cloud)",
+      "description": "Clean up transcription using OpenRouter API",
+      "testable_outcome": "Speak with filler words, cleaned text appears",
+      "features": [
+        {
+          "id": "5.1",
+          "description": "OpenRouter API client (HTTP POST)",
+          "verification": [
+            "API key is set",
+            "Can make request to OpenRouter",
+            "Receives valid response"
+          ],
+          "passes": false
+        },
+        {
+          "id": "5.2",
+          "description": "Load API keys and config from .env file",
+          "verification": [
+            ".env file exists with OPENROUTER_API_KEY",
+            "App reads .env on startup",
+            "API key is available for requests"
+          ],
+          "passes": false
+        },
+        {
+          "id": "5.3",
+          "description": "Main prompt: remove fillers, add punctuation",
+          "verification": [
+            "Say 'um so like hello how are you'",
+            "Output is 'Hello, how are you?'",
+            "Fillers removed, punctuation added"
+          ],
+          "passes": false
+        },
+        {
+          "id": "5.4",
+          "description": "Advanced prompt: backtrack handling",
+          "verification": [
+            "Enable advanced prompt",
+            "Say 'hello wait no actually hi there'",
+            "Output is 'Hi there.'",
+            "Backtracked content removed"
+          ],
+          "passes": false
+        },
+        {
+          "id": "5.5",
+          "description": "Dictionary prompt: custom term replacement",
+          "verification": [
+            "Add dictionary entry: 'ant row pic = Anthropic'",
+            "Say 'I work at ant row pic'",
+            "Output contains 'Anthropic'"
+          ],
+          "passes": false
+        },
+        {
+          "id": "5.6",
+          "description": "Model selection for cloud mode",
+          "verification": [
+            "Open settings",
+            "Cloud model dropdown shows options (Groq, Claude, etc.)",
+            "Select different model",
+            "Next transcription uses selected model"
+          ],
+          "passes": false
+        },
+        {
+          "id": "5.7",
+          "description": "Handle API errors gracefully",
+          "verification": [
+            "Set invalid API key",
+            "Attempt transcription",
+            "App shows error message, does not crash",
+            "Falls back to raw transcription or shows error"
+          ],
+          "passes": false
+        },
+        {
+          "id": "5.8",
+          "description": "Handle network offline gracefully",
+          "verification": [
+            "Disable network connection",
+            "Attempt cloud transcription",
+            "App shows helpful error about network"
+          ],
+          "passes": false
+        },
+        {
+          "id": "5.9",
+          "description": "LLM processing toggle (on/off)",
+          "verification": [
+            "Toggle visible in menu bar dropdown",
+            "Toggle OFF: raw transcription injected (no LLM cleanup)",
+            "Toggle ON: LLM-cleaned text injected",
+            "Toggle state persists across app restart"
+          ],
+          "passes": false
+        }
+      ]
+    },
+    {
+      "phase": 6,
+      "name": "LLM Processing (Local)",
+      "description": "Clean up transcription using Ollama (fully offline)",
+      "testable_outcome": "Toggle to local mode, disconnect wifi, cleaned text still works",
+      "features": [
+        {
+          "id": "6.1",
+          "description": "Check if Ollama is running",
+          "verification": [
+            "Ollama is running (ollama serve)",
+            "App detects Ollama at localhost:11434",
+            "Console logs 'Ollama available'"
+          ],
+          "passes": false
+        },
+        {
+          "id": "6.2",
+          "description": "Ollama API client (HTTP POST)",
+          "verification": [
+            "Make request to Ollama generate endpoint",
+            "Receive valid response",
+            "Response contains generated text"
+          ],
+          "passes": false
+        },
+        {
+          "id": "6.3",
+          "description": "Same 3-prompt system works with Ollama",
+          "verification": [
+            "Set mode to Local",
+            "Say 'um like hello'",
+            "Output is 'Hello.'",
+            "Processing happened via Ollama"
+          ],
+          "passes": false
+        },
+        {
+          "id": "6.4",
+          "description": "Local model selection",
+          "verification": [
+            "Open settings",
+            "Local model dropdown shows installed Ollama models",
+            "Select different model (e.g., llama3.2, mistral)",
+            "Next transcription uses selected model"
+          ],
+          "passes": false
+        },
+        {
+          "id": "6.5",
+          "description": "Mode toggle in menu bar (Local/Cloud)",
+          "verification": [
+            "Click menu bar icon",
+            "Mode toggle is visible",
+            "Can switch between Local and Cloud",
+            "Mode persists across sessions"
+          ],
+          "passes": false
+        },
+        {
+          "id": "6.6",
+          "description": "Offline indicator in menu",
+          "verification": [
+            "Set mode to Local",
+            "Menu shows indicator that mode is offline/local"
+          ],
+          "passes": false
+        },
+        {
+          "id": "6.7",
+          "description": "Handle Ollama not running",
+          "verification": [
+            "Stop Ollama (killall ollama)",
+            "Set mode to Local",
+            "Attempt transcription",
+            "App shows helpful error: 'Ollama not running'"
+          ],
+          "passes": false
+        },
+        {
+          "id": "6.8",
+          "description": "Fully offline end-to-end test",
+          "verification": [
+            "Set mode to Local",
+            "Disable wifi/network",
+            "Hold hotkey, say 'um testing offline mode', release",
+            "Cleaned text 'Testing offline mode.' appears"
+          ],
+          "passes": false
+        }
+      ]
+    },
+    {
+      "phase": 7,
+      "name": "Settings Window",
+      "description": "Full settings UI with prompt editing",
+      "testable_outcome": "Edit prompts in UI, changes affect output",
+      "features": [
+        {
+          "id": "7.1",
+          "description": "Settings menu item opens window",
+          "verification": [
+            "Click menu bar icon",
+            "Click 'Settings...'",
+            "Settings window opens"
+          ],
+          "passes": false
+        },
+        {
+          "id": "7.2",
+          "description": "Settings window has tabs",
+          "verification": [
+            "Open settings window",
+            "Tabs visible: Prompts, Dictionary, History, Settings",
+            "Can click between tabs"
+          ],
+          "passes": false
+        },
+        {
+          "id": "7.3",
+          "description": "Prompts tab: Main prompt editor",
+          "verification": [
+            "Go to Prompts tab",
+            "Main prompt text area is visible",
+            "Can edit the prompt text",
+            "Changes are saved"
+          ],
+          "passes": false
+        },
+        {
+          "id": "7.4",
+          "description": "Prompts tab: Advanced prompt with toggle",
+          "verification": [
+            "Advanced prompt section has enable/disable toggle",
+            "Toggle off: advanced prompt not used",
+            "Toggle on: advanced prompt is used"
+          ],
+          "passes": false
+        },
+        {
+          "id": "7.5",
+          "description": "Dictionary tab: term editor",
+          "verification": [
+            "Go to Dictionary tab",
+            "Can add new term: 'spoken = replacement'",
+            "Can edit existing terms",
+            "Can delete terms"
+          ],
+          "passes": false
+        },
+        {
+          "id": "7.6",
+          "description": "Settings tab: Hotkey configuration",
+          "verification": [
+            "Go to Settings tab",
+            "Hotkey field shows current hotkey",
+            "Can record new hotkey",
+            "New hotkey works after saving"
+          ],
+          "passes": false
+        },
+        {
+          "id": "7.7",
+          "description": "Settings tab: API key status from .env",
+          "verification": [
+            "Settings shows whether OPENROUTER_API_KEY is loaded",
+            "Shows masked key or 'Not configured'",
+            "Shows path to .env file for editing"
+          ],
+          "passes": false
+        },
+        {
+          "id": "7.8",
+          "description": "Settings tab: Model pickers",
+          "verification": [
+            "Local model dropdown (Ollama models)",
+            "Cloud model dropdown (OpenRouter models)",
+            "Selections persist"
+          ],
+          "passes": false
+        },
+        {
+          "id": "7.9",
+          "description": "All settings persist across app restart",
+          "verification": [
+            "Change various settings",
+            "Quit app",
+            "Relaunch app",
+            "All settings retained"
+          ],
+          "passes": false
+        },
+        {
+          "id": "7.10",
+          "description": "Edited prompt affects transcription output",
+          "verification": [
+            "Edit main prompt to add custom instruction",
+            "Perform transcription",
+            "Output reflects the custom prompt"
+          ],
+          "passes": false
+        }
+      ]
+    },
+    {
+      "phase": 8,
+      "name": "Stats & Logging",
+      "description": "Track usage statistics and save transcription history",
+      "testable_outcome": "Stats show in menu, transcriptions logged to file",
+      "features": [
+        {
+          "id": "8.1",
+          "description": "Calculate word count per transcription",
+          "verification": [
+            "Complete a transcription",
+            "Console logs word count",
+            "Count matches actual words"
+          ],
+          "passes": false
+        },
+        {
+          "id": "8.2",
+          "description": "Calculate WPM (words per minute)",
+          "verification": [
+            "Complete a transcription",
+            "Console logs WPM",
+            "WPM = (word count / recording duration) * 60"
+          ],
+          "passes": false
+        },
+        {
+          "id": "8.3",
+          "description": "Show today's stats in menu bar dropdown",
+          "verification": [
+            "Click menu bar icon",
+            "Shows 'Today: X words | Y WPM'",
+            "Stats update after each transcription"
+          ],
+          "passes": false
+        },
+        {
+          "id": "8.4",
+          "description": "Persist stats across app restart",
+          "verification": [
+            "Do several transcriptions",
+            "Note the stats",
+            "Quit and relaunch",
+            "Stats are preserved"
+          ],
+          "passes": false
+        },
+        {
+          "id": "8.5",
+          "description": "Daily stats aggregation",
+          "verification": [
+            "Stats are grouped by day",
+            "New day starts fresh count",
+            "Historical days preserved"
+          ],
+          "passes": false
+        },
+        {
+          "id": "8.6",
+          "description": "Create transcription log file",
+          "verification": [
+            "Complete a transcription",
+            "File exists at ~/Documents/Dictator/transcriptions.jsonl",
+            "File is valid JSON lines format"
+          ],
+          "passes": false
+        },
+        {
+          "id": "8.7",
+          "description": "Log entry contains all fields",
+          "verification": [
+            "Read log file entry",
+            "Contains: timestamp, raw_text, cleaned_text, word_count, duration, wpm, mode, model"
+          ],
+          "passes": false
+        },
+        {
+          "id": "8.8",
+          "description": "History tab shows past transcriptions",
+          "verification": [
+            "Open Settings > History tab",
+            "List of past transcriptions visible",
+            "Shows timestamp and text preview",
+            "Can scroll through history"
+          ],
+          "passes": false
+        },
+        {
+          "id": "8.9",
+          "description": "Stats tab shows detailed statistics",
+          "verification": [
+            "Open Settings > Stats tab (or section)",
+            "Shows today, this week, all-time stats",
+            "Shows total words, average WPM, total recordings"
+          ],
+          "passes": false
+        }
+      ]
+    },
+    {
+      "phase": 9,
+      "name": "Polish",
+      "description": "Production-ready experience with error handling",
+      "testable_outcome": "App feels complete and handles edge cases gracefully",
+      "features": [
+        {
+          "id": "9.1",
+          "description": "Sound feedback on recording start",
+          "verification": [
+            "Hold hotkey",
+            "Hear brief 'start' sound",
+            "Sound is subtle and not annoying"
+          ],
+          "passes": false
+        },
+        {
+          "id": "9.2",
+          "description": "Sound feedback on recording stop",
+          "verification": [
+            "Release hotkey",
+            "Hear brief 'stop' sound"
+          ],
+          "passes": false
+        },
+        {
+          "id": "9.3",
+          "description": "Error notifications",
+          "verification": [
+            "Trigger an error (e.g., no API key)",
+            "User sees clear error notification",
+            "Notification is dismissible"
+          ],
+          "passes": false
+        },
+        {
+          "id": "9.4",
+          "description": "Launch at login option",
+          "verification": [
+            "Enable 'Launch at login' in settings",
+            "Restart Mac (or log out/in)",
+            "App starts automatically"
+          ],
+          "passes": false
+        },
+        {
+          "id": "9.5",
+          "description": "About window with version info",
+          "verification": [
+            "Menu has 'About' option",
+            "Shows app name and version",
+            "Shows credits/link"
+          ],
+          "passes": false
+        },
+        {
+          "id": "9.6",
+          "description": "First-run onboarding",
+          "verification": [
+            "Delete app preferences (fresh install)",
+            "Launch app",
+            "Onboarding guides through: permissions, API key, hotkey"
+          ],
+          "passes": false
+        },
+        {
+          "id": "9.7",
+          "description": "Handle rapid repeated recordings",
+          "verification": [
+            "Quickly trigger multiple recordings in succession",
+            "App handles gracefully, no crashes",
+            "Each recording processes correctly"
+          ],
+          "passes": false
+        },
+        {
+          "id": "9.8",
+          "description": "Memory usage is reasonable",
+          "verification": [
+            "Run app for extended period",
+            "Do many transcriptions",
+            "Memory usage in Activity Monitor stays reasonable (<500MB)"
+          ],
+          "passes": false
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "total_features": 55,
+    "created": "2026-01-20",
+    "last_updated": "2026-01-20"
+  }
+}

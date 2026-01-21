@@ -1,0 +1,88 @@
+# ===================
+# Reference repos (for learning, not part of this project)
+# ===================
+FluidAudio-main/
+Secretary-main/
+Starling-main/
+tambourine-voice-main/
+voquill-main/
+FluidVoice-main/
+
+# ===================
+# Secrets & Environment
+# ===================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+credentials.json
+
+# ===================
+# Claude Code
+# ===================
+.claude/settings.local.json
+
+# ===================
+# macOS
+# ===================
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# ===================
+# Xcode
+# ===================
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+DerivedData/
+build/
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# ===================
+# Swift Package Manager
+# ===================
+.build/
+.swiftpm/
+Package.resolved
+Packages/
+
+# ===================
+# App Data (local testing)
+# ===================
+*.log
+logs/
+
+# ===================
+# IDE
+# ===================
+*.swp
+*.swo
+*~
+.idea/
+.vscode/settings.json
+.vscode/*.log
+
+# ===================
+# Temporary
+# ===================
+tmp/
+temp/
+*.tmp
