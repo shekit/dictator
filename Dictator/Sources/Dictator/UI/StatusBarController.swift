@@ -237,6 +237,14 @@ final class StatusBarController {
     private func buildCloudModelSubmenu() {
         cloudModelSubmenu.removeAllItems()
 
+        // Check if API key is set
+        if !EnvLoader.shared.hasOpenRouterKey {
+            let statusItem = NSMenuItem(title: "OpenRouter key not set", action: nil, keyEquivalent: "")
+            statusItem.isEnabled = false
+            cloudModelSubmenu.addItem(statusItem)
+            return
+        }
+
         for model in OpenRouterClient.availableModels {
             let item = NSMenuItem(title: model.name, action: #selector(handleCloudModelSelection(_:)), keyEquivalent: "")
             item.target = self
@@ -255,16 +263,19 @@ final class StatusBarController {
 
         guard let service = llmService else { return }
 
+        // Check if Ollama is running
+        if !service.isOllamaAvailable {
+            let statusItem = NSMenuItem(title: "Ollama server not on", action: nil, keyEquivalent: "")
+            statusItem.isEnabled = false
+            localModelSubmenu.addItem(statusItem)
+            return
+        }
+
+        // Ollama is running but no models
         if service.availableLocalModels.isEmpty {
             let noModelsItem = NSMenuItem(title: "No models available", action: nil, keyEquivalent: "")
             noModelsItem.isEnabled = false
             localModelSubmenu.addItem(noModelsItem)
-
-            if !service.isOllamaAvailable {
-                let hintItem = NSMenuItem(title: "Ollama not running", action: nil, keyEquivalent: "")
-                hintItem.isEnabled = false
-                localModelSubmenu.addItem(hintItem)
-            }
         } else {
             for model in service.availableLocalModels {
                 let title = "\(model.displayName) (\(model.sizeDescription))"
@@ -293,8 +304,11 @@ final class StatusBarController {
             }
         }
 
+        // Rebuild cloud model submenu (to reflect API key status)
+        buildCloudModelSubmenu()
+
         // Update cloud model checkmarks and enable state
-        let enableCloudModels = service.processingMode == .cloud
+        let enableCloudModels = service.processingMode == .cloud && EnvLoader.shared.hasOpenRouterKey
         for item in cloudModelSubmenu.items {
             if let modelId = item.representedObject as? String {
                 item.state = modelId == service.selectedCloudModel ? .on : .off

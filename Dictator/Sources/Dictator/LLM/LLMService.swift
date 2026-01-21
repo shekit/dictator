@@ -38,7 +38,7 @@ final class LLMService: ObservableObject {
 
     // MARK: - Published Settings
 
-    @Published var processingMode: ProcessingMode = .cloud {
+    @Published var processingMode: ProcessingMode = .off {
         didSet { saveSettings() }
     }
 
@@ -324,6 +324,9 @@ final class LLMService: ObservableObject {
         if let modeString = defaults.string(forKey: kProcessingMode),
            let mode = ProcessingMode(rawValue: modeString) {
             processingMode = mode
+        } else {
+            // First run: default to cloud if API key is set, otherwise raw
+            processingMode = EnvLoader.shared.hasOpenRouterKey ? .cloud : .off
         }
 
         // Cloud model

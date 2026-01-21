@@ -77,14 +77,9 @@ actor OpenRouterClient {
     // MARK: - Available Models
 
     static let availableModels: [(id: String, name: String)] = [
-        ("meta-llama/llama-3.3-70b-instruct", "Llama 3.3 70B - Fast"),
-        ("meta-llama/llama-3.2-3b-instruct", "Llama 3.2 3B - Fastest"),
-        ("anthropic/claude-3.5-haiku", "Claude 3.5 Haiku - Balanced"),
-        ("anthropic/claude-3.5-sonnet", "Claude 3.5 Sonnet - Best Quality"),
-        ("openai/gpt-4o-mini", "GPT-4o Mini - OpenAI"),
-        ("openai/gpt-4o", "GPT-4o - OpenAI Premium"),
-        ("google/gemini-2.0-flash-001", "Gemini 2.0 Flash - Fast"),
-        ("mistralai/mistral-small-24b-instruct-2501", "Mistral Small 24B - Balanced"),
+        ("meta-llama/llama-3.3-70b-instruct", "Llama 3.3 70B"),
+        ("anthropic/claude-3.5-haiku", "Claude 3.5 Haiku"),
+        ("openai/gpt-4o-mini", "GPT-4o Mini"),
     ]
 
     static let defaultModel = "meta-llama/llama-3.3-70b-instruct"

@@ -463,3 +463,57 @@ This file tracks progress across coding sessions. Append new entries at the bott
 - App is production-ready
 
 ---
+
+## Session 10 - 2026-01-21 (Onboarding UX Refinements)
+- Refined onboarding flow based on user feedback
+- Removed all file system permission prompts
+- Simplified permission granting UX
+
+### Key Changes
+- EnvLoader.swift: Completely removed .env file loading to prevent Documents folder permission prompt
+  - Now only uses UserDefaults for configuration (API keys stored in UserDefaults)
+  - No file system access required during startup
+- TranscriptionLogger.swift: Moved log file from ~/Documents/Dictator/ to ~/Library/Application Support/Dictator/
+  - Application Support doesn't require special permissions
+- OnboardingWindow.swift: Major UX improvements
+  - Replaced two-button flow with single "Grant Permission" button
+  - Implemented automatic permission detection via polling (0.5s interval)
+  - Auto-advances to next step when permission is detected
+  - Shows "You must grant permission to proceed" message while waiting
+  - Simplified permission descriptions to single lines
+  - Added brief API key description
+  - Proper timer cleanup to prevent leaks
+- Created reset-onboarding.sh script for easy testing
+
+### Files Modified
+- Dictator/Sources/Dictator/Storage/EnvLoader.swift
+- Dictator/Sources/Dictator/Stats/TranscriptionLogger.swift
+- Dictator/Sources/Dictator/UI/OnboardingWindow.swift
+- Dictator/Sources/Dictator/UI/StatusBarController.swift
+- Dictator/Sources/Dictator/UI/SettingsWindow.swift
+- Dictator/Sources/Dictator/App/AppDelegate.swift
+
+### Files Created
+- Dictator/reset-onboarding.sh
+
+### Verification
+- No Documents folder permission prompt on first launch
+- App properly registers in Microphone permissions (via AVCaptureDevice.requestAccess)
+- App properly registers in Accessibility permissions (via AXIsProcessTrusted)
+- Single "Grant Permission" button opens System Settings
+- Automatic advancement when permission is granted
+- Clear, concise descriptions without excessive text
+- API key stored in UserDefaults (no file operations)
+
+### Commits
+- 67dde64: Fix onboarding permission prompts and complete Phase 9 polish
+- 4a03c8d: Add permission validation to onboarding flow
+- 3b600f2: Improve onboarding UX with automatic permission detection
+
+### Current State
+- All 9 phases complete (55/55 features passing)
+- Onboarding UX polished and user-tested
+- No permission prompts during first launch except required system permissions
+- App is fully production-ready
+
+---
