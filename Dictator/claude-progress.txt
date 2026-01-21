@@ -254,3 +254,29 @@ User chose Option C (Smart Helper) with explicit requirement: "just one thing to
 
 **Commit**: a4d1a17 - Improve Settings navigation and Ollama server management
 
+
+## 2026-01-21 - Add live menu update for API key status
+
+**User Request**: "Once the API key is entered in Open Router, it should auto-update the text in the menu drop-down from 'API not entered' to whatever it is once it's connected."
+
+**Implementation**: Added real-time menu updates when API key is added or removed in Settings.
+
+**Technical Details**:
+- Added `observeUserDefaultsChanges()` method to StatusBarController
+- Observes `UserDefaults.didChangeNotification` using Combine
+- Debounces changes by 100ms to avoid excessive updates
+- Automatically calls `updateLLMMenuItems()` when UserDefaults changes
+- Uses existing `cancellables` Set<AnyCancellable> infrastructure
+
+**Behavior**:
+- When user enters API key in Settings:
+  - Menu item changes from "Cloud - API key missing" → "Cloud"
+  - Change is immediate, no need to reopen menu or restart app
+- When user removes API key:
+  - Menu item changes from "Cloud" → "Cloud - API key missing"
+- Works for any UserDefaults changes that affect menu state
+
+**UX Improvement**: Provides instant visual feedback when API key status changes, making the app feel more responsive and integrated.
+
+**Commit**: 3b8218d - Add live menu update when API key is added or removed
+
