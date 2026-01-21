@@ -74,10 +74,18 @@ This file tracks progress across coding sessions. Append new entries at the bott
 - Accessibility permission prompt via AXIsProcessTrustedWithOptions
 - Microphone permission handling with helpful error messages
 
+### Post-Implementation Updates
+- Changed hotkey from Ctrl+Option+Space to **fn key** (hold to record)
+- Added cancel behavior: fn + other key cancels recording (allows F1-F12 to work)
+- Fixed permission handling:
+  - Added permission polling timer to auto-detect when permission is granted
+  - Removed NSAlert that was interfering with permission detection
+  - App must be launched via `open ./Dictator.app` to properly gain permissions
+
 ### Verification
 - `swift build` succeeds without errors
 - App bundle created at Dictator/Dictator.app
-- Hotkey: Ctrl+Option+Space (hold to record, release to stop)
+- Hotkey: fn key (hold to record, release to stop, fn+other key cancels)
 - Console logs show hotkey events and buffer sizes
 - Menu bar icon changes during recording
 - Graceful error handling for missing permissions
