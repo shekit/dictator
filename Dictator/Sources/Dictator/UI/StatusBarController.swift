@@ -26,8 +26,6 @@ final class StatusBarController {
     private let statsMenuItem = NSMenuItem()
     private let llmStatusMenuItem = NSMenuItem()
     private var modeSubmenu = NSMenu()
-    private var cloudModelSubmenu = NSMenu()
-    private var localModelSubmenu = NSMenu()
     private let quitAction: () -> Void
 
     private var recordingService: RecordingService?
@@ -83,39 +81,16 @@ final class StatusBarController {
             }
             .store(in: &cancellables)
 
-        // Observe cloud model changes
-        service.$selectedCloudModel
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.updateLLMMenuItems()
-            }
-            .store(in: &cancellables)
-
-        // Observe local model changes
-        service.$selectedLocalModel
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.updateLLMMenuItems()
-            }
-            .store(in: &cancellables)
-
         // Observe Ollama availability changes
         service.$isOllamaAvailable
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                self?.updateLLMMenuItems()
-            }
-            .store(in: &cancellables)
-
-        // Observe available local models changes
-        service.$availableLocalModels
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.rebuildLocalModelSubmenu()
+                self?.buildModeSubmenu()
             }
             .store(in: &cancellables)
 
         // Initial update
+        buildModeSubmenu()
         updateLLMMenuItems()
     }
 
@@ -187,28 +162,16 @@ final class StatusBarController {
         llmStatusMenuItem.title = "LLM: Loading..."
         llmStatusMenuItem.isEnabled = false
 
-        // Mode selection submenu (Cloud/Local/Off)
+        // Mode selection submenu (Raw/Local/Cloud)
         let modeMenuItem = NSMenuItem(title: "Processing Mode", action: nil, keyEquivalent: "")
         buildModeSubmenu()
         modeMenuItem.submenu = modeSubmenu
-
-        // Cloud model selection submenu
-        let cloudModelMenuItem = NSMenuItem(title: "Cloud Model", action: nil, keyEquivalent: "")
-        buildCloudModelSubmenu()
-        cloudModelMenuItem.submenu = cloudModelSubmenu
-
-        // Local model selection submenu
-        let localModelMenuItem = NSMenuItem(title: "Local Model", action: nil, keyEquivalent: "")
-        buildLocalModelSubmenu()
-        localModelMenuItem.submenu = localModelSubmenu
 
         menu.items = [
             statsMenuItem,
             NSMenuItem.separator(),
             llmStatusMenuItem,
             modeMenuItem,
-            cloudModelMenuItem,
-            localModelMenuItem,
             NSMenuItem.separator(),
             settingsItem,
             aboutItem,
@@ -221,66 +184,32 @@ final class StatusBarController {
     private func buildModeSubmenu() {
         modeSubmenu.removeAllItems()
 
+        guard let service = llmService else { return }
+
         for mode in LLMService.ProcessingMode.allCases {
-            let item = NSMenuItem(title: mode.displayName, action: #selector(handleModeSelection(_:)), keyEquivalent: "")
+            var title = mode.displayName
+
+            // Add status indicators for unavailable services
+            if mode == .cloud && !EnvLoader.shared.hasOpenRouterKey {
+                title = "Cloud - API key missing"
+            } else if mode == .local && !service.isOllamaAvailable {
+                title = "Local - Ollama not connected"
+            }
+
+            let item = NSMenuItem(title: title, action: #selector(handleModeSelection(_:)), keyEquivalent: "")
             item.target = self
             item.representedObject = mode.rawValue
             modeSubmenu.addItem(item)
         }
-    }
 
-    private func buildCloudModelSubmenu() {
-        cloudModelSubmenu.removeAllItems()
-
-        // Check if API key is set
-        if !EnvLoader.shared.hasOpenRouterKey {
-            let statusItem = NSMenuItem(title: "OpenRouter key not set", action: nil, keyEquivalent: "")
-            statusItem.isEnabled = false
-            cloudModelSubmenu.addItem(statusItem)
-            return
-        }
-
-        for model in OpenRouterClient.availableModels {
-            let item = NSMenuItem(title: model.name, action: #selector(handleCloudModelSelection(_:)), keyEquivalent: "")
-            item.target = self
-            item.representedObject = model.id
-            cloudModelSubmenu.addItem(item)
-        }
-    }
-
-    private func buildLocalModelSubmenu() {
-        localModelSubmenu.removeAllItems()
-        rebuildLocalModelSubmenu()
-    }
-
-    private func rebuildLocalModelSubmenu() {
-        localModelSubmenu.removeAllItems()
-
-        guard let service = llmService else { return }
-
-        // Check if Ollama is running
-        if !service.isOllamaAvailable {
-            let statusItem = NSMenuItem(title: "Ollama server not on", action: nil, keyEquivalent: "")
-            statusItem.isEnabled = false
-            localModelSubmenu.addItem(statusItem)
-            return
-        }
-
-        // Ollama is running but no models
-        if service.availableLocalModels.isEmpty {
-            let noModelsItem = NSMenuItem(title: "No models available", action: nil, keyEquivalent: "")
-            noModelsItem.isEnabled = false
-            localModelSubmenu.addItem(noModelsItem)
-        } else {
-            for model in service.availableLocalModels {
-                let title = "\(model.displayName) (\(model.sizeDescription))"
-                let item = NSMenuItem(title: title, action: #selector(handleLocalModelSelection(_:)), keyEquivalent: "")
-                item.target = self
-                item.representedObject = model.name
-                localModelSubmenu.addItem(item)
+        // Update checkmarks
+        for item in modeSubmenu.items {
+            if let modeRaw = item.representedObject as? String {
+                item.state = modeRaw == service.processingMode.rawValue ? .on : .off
             }
         }
     }
+
 
     private func updateLLMMenuItems() {
         guard let service = llmService else { return }
@@ -292,36 +221,8 @@ final class StatusBarController {
         }
         llmStatusMenuItem.title = statusText
 
-        // Update mode checkmarks
-        for item in modeSubmenu.items {
-            if let modeRaw = item.representedObject as? String {
-                item.state = modeRaw == service.processingMode.rawValue ? .on : .off
-            }
-        }
-
-        // Rebuild cloud model submenu (to reflect API key status)
-        buildCloudModelSubmenu()
-
-        // Update cloud model checkmarks and enable state
-        let enableCloudModels = service.processingMode == .cloud && EnvLoader.shared.hasOpenRouterKey
-        for item in cloudModelSubmenu.items {
-            if let modelId = item.representedObject as? String {
-                item.state = modelId == service.selectedCloudModel ? .on : .off
-            }
-            item.isEnabled = enableCloudModels
-        }
-
-        // Update local model checkmarks and enable state
-        let enableLocalModels = service.processingMode == .local
-        for item in localModelSubmenu.items {
-            if let modelName = item.representedObject as? String {
-                item.state = modelName == service.selectedLocalModel ? .on : .off
-            }
-            // Only enable if we're in local mode AND the item has a model (not the placeholder)
-            if item.representedObject != nil {
-                item.isEnabled = enableLocalModels
-            }
-        }
+        // Rebuild mode submenu to update availability status and checkmarks
+        buildModeSubmenu()
     }
 
     @objc private func handleModeSelection(_ sender: NSMenuItem) {
@@ -361,21 +262,6 @@ final class StatusBarController {
         print("[StatusBarController] Mode changed to: \(mode.rawValue)")
     }
 
-    @objc private func handleCloudModelSelection(_ sender: NSMenuItem) {
-        guard let service = llmService,
-              let modelId = sender.representedObject as? String else { return }
-
-        service.selectedCloudModel = modelId
-        print("[StatusBarController] Cloud model changed to: \(modelId)")
-    }
-
-    @objc private func handleLocalModelSelection(_ sender: NSMenuItem) {
-        guard let service = llmService,
-              let modelName = sender.representedObject as? String else { return }
-
-        service.selectedLocalModel = modelName
-        print("[StatusBarController] Local model changed to: \(modelName)")
-    }
 
     private func handleStateChange(_ state: RecordingService.State) {
         switch state {
