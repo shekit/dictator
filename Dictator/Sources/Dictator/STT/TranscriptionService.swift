@@ -30,7 +30,7 @@ final class TranscriptionService: ObservableObject {
 
     private init() {}
 
-    /// Prepare the ASR models (downloads if needed, then loads)
+    /// Prepare the ASR models (checks bundled models first, then downloads if needed)
     func prepareModels() async throws {
         guard !isModelLoaded else {
             print("[TranscriptionService] Models already loaded")
@@ -41,9 +41,21 @@ final class TranscriptionService: ObservableObject {
         print("[TranscriptionService] Starting model preparation...")
 
         do {
-            // Download and load models - this handles downloading if not cached
-            let models = try await AsrModels.downloadAndLoad(version: .v2)
-            print("[TranscriptionService] Models downloaded/loaded from disk")
+            // First, try to load from app bundle (for distribution)
+            let bundledModelsPath = getBundledModelsPath()
+            let models: AsrModels
+
+            if AsrModels.modelsExist(at: bundledModelsPath, version: .v2) {
+                print("[TranscriptionService] Loading models from app bundle...")
+                models = try await AsrModels.load(from: bundledModelsPath, version: .v2)
+                print("[TranscriptionService] Models loaded from app bundle")
+            } else {
+                // Fallback: download models (first launch without bundled models)
+                print("[TranscriptionService] Bundled models not found, downloading...")
+                print("[TranscriptionService] ⏳ This may take 2-5 minutes on first launch...")
+                models = try await AsrModels.downloadAndLoad(version: .v2)
+                print("[TranscriptionService] Models downloaded to cache")
+            }
 
             // Initialize AsrManager
             let manager = AsrManager(config: ASRConfig.default)
@@ -56,9 +68,18 @@ final class TranscriptionService: ObservableObject {
             print("[TranscriptionService] ASR model loaded successfully")
         } catch {
             self.state = .error("Failed to load ASR model: \(error.localizedDescription)")
-            print("[TranscriptionService] Error loading models: \(error)")
+            print("[TranscriptionService] ❌ Error loading models: \(error)")
             throw error
         }
+    }
+
+    /// Get path to bundled models in app bundle
+    private func getBundledModelsPath() -> URL {
+        if let bundlePath = Bundle.main.resourceURL?.appendingPathComponent("FluidAudio/models/v2") {
+            return bundlePath
+        }
+        // Fallback to default cache if bundle path not found
+        return AsrModels.defaultCacheDirectory(for: .v2)
     }
 
     /// Check if models exist on disk (for determining first-run state)

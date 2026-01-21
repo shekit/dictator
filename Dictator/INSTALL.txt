@@ -1,0 +1,44 @@
+Dictator - Voice-to-Text Dictation App
+======================================
+
+INSTALLATION INSTRUCTIONS:
+
+Option 1 - Quick Install (Recommended):
+  1. Open Terminal
+  2. Drag "install-dictator.sh" into Terminal
+  3. Press Enter
+  4. Double-click Dictator.app to launch
+
+Option 2 - Manual Install:
+  1. Right-click Dictator.app
+  2. Click "Open" (not double-click!)
+  3. Click "Open" in the security dialog
+  4. App will launch
+
+Option 3 - Terminal Command:
+  Open Terminal and run:
+  xattr -cr /path/to/Dictator.app
+
+FIRST LAUNCH:
+  - Follow the onboarding to grant Microphone and Accessibility permissions
+  - These are required for dictation to work
+
+  IMPORTANT - Model Download:
+  - On first launch, the app downloads ASR models (~200MB)
+  - This happens in the background and takes 2-5 minutes
+  - Internet connection required for first launch
+  - The app may appear frozen during download - this is normal
+  - Check Console.app for progress: filter for "TranscriptionService"
+  - Once downloaded, models are cached and app works offline
+
+REQUIREMENTS:
+  - macOS 14.0 (Sonoma) or later
+  - Apple Silicon (M1/M2/M3/M4)
+
+FEATURES:
+  - Hold fn key, speak, release to dictate
+  - Optional LLM cleanup (Cloud or Local via Ollama)
+  - Stats tracking, transcription history
+  - Custom dictionary for technical terms
+
+Need help? Report issues at: https://github.com/anthropics/dictator/issues
