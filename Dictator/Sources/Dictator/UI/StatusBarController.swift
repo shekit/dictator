@@ -179,10 +179,6 @@ final class StatusBarController {
         aboutItem.target = self
         aboutItem.action = #selector(handleAbout)
 
-        // Status display item (disabled, just for info)
-        statusMenuItem.title = "Status: Ready"
-        statusMenuItem.isEnabled = false
-
         // Stats display item (disabled, just for info)
         updateTodayStats()
         statsMenuItem.isEnabled = false
@@ -207,7 +203,6 @@ final class StatusBarController {
         localModelMenuItem.submenu = localModelSubmenu
 
         menu.items = [
-            statusMenuItem,
             statsMenuItem,
             NSMenuItem.separator(),
             llmStatusMenuItem,
@@ -386,22 +381,16 @@ final class StatusBarController {
         switch state {
         case .idle:
             setIconState(.idle)
-            statusMenuItem.title = "Status: Ready"
         case .recording:
             setIconState(.recording)
-            statusMenuItem.title = "Status: Recording..."
         case .transcribing:
             setIconState(.transcribing)
-            statusMenuItem.title = "Status: Transcribing..."
         case .processing:
             setIconState(.processing)
-            statusMenuItem.title = "Status: Processing..."
         case .injecting:
             setIconState(.injecting)
-            statusMenuItem.title = "Status: Injecting text..."
-        case .error(let message):
+        case .error(_):
             setIconState(.error)
-            statusMenuItem.title = "Error: \(message)"
         }
     }
 

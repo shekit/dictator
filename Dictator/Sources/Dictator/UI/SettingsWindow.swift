@@ -727,8 +727,8 @@ struct StatBox: View {
                 .font(.title.bold())
 
             Text(title)
-                .font(.caption)
-                .foregroundColor(.secondary)
+                .font(.subheadline)
+                .foregroundColor(.primary)
         }
         .frame(minWidth: 120)
     }

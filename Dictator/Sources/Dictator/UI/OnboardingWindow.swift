@@ -21,7 +21,7 @@ struct OnboardingWindow: View {
         OnboardingStep(
             icon: "waveform",
             title: "Welcome to Dictator",
-            description: "Voice-to-text dictation with AI-powered cleanup.\n\nHold fn key, speak, release, and cleaned text appears at your cursor.",
+            description: "Voice-to-text dictation with AI-powered cleanup.",
             actionTitle: "Get Started"
         ),
         OnboardingStep(
@@ -75,6 +75,31 @@ struct OnboardingWindow: View {
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 50)
                         .fixedSize(horizontal: false, vertical: true)
+                }
+
+                // Special content for welcome screen (step 0)
+                if currentStep == 0 {
+                    VStack(spacing: 12) {
+                        // Large fn key icon
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.blue.opacity(0.1))
+                                .frame(width: 80, height: 80)
+
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.blue, lineWidth: 2)
+                                .frame(width: 80, height: 80)
+
+                            Text("fn")
+                                .font(.system(size: 32, weight: .semibold, design: .rounded))
+                                .foregroundColor(.blue)
+                        }
+                        .padding(.top, 8)
+
+                        Text("Hold, speak, release")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
                 }
 
                 // Waiting for permission message
