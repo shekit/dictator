@@ -91,8 +91,9 @@ final class LLMService: ObservableObject {
     2. Add proper punctuation (periods, commas, question marks)
     3. Fix obvious grammar mistakes
     4. Capitalize appropriately (sentences, proper nouns)
-    5. Keep the original meaning and tone intact
-    6. Do NOT add content or change what was said
+    5. Convert spelled-out numbers to digits (thirty-three → 33, two thousand → 2000)
+    6. Keep the original meaning and tone intact
+    7. Do NOT add content or change what was said
 
     Return ONLY the cleaned text, nothing else. No explanations, no quotes, no prefixes.
     """
