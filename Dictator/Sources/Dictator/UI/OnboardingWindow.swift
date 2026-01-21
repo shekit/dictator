@@ -5,8 +5,8 @@ import AVFoundation
 struct OnboardingWindow: View {
     @State private var currentStep: Int
     @State private var apiKey: String = ""
-    @State private var showPermissionError = false
-    @State private var permissionErrorMessage = ""
+    @State private var isWaitingForPermission = false
+    @State private var permissionCheckTimer: Timer?
     @Environment(\.dismiss) private var dismiss
     let onComplete: () -> Void
 
@@ -27,28 +27,28 @@ struct OnboardingWindow: View {
         OnboardingStep(
             icon: "hand.point.up.left",
             title: "Accessibility Permission",
-            description: "Dictator needs Accessibility permission to inject text at your cursor.\n\nClick 'Open Settings' and enable Dictator in Privacy & Security > Accessibility.",
+            description: "Required to inject text at your cursor.",
             actionTitle: "Open Settings",
             action: .requestAccessibility
         ),
         OnboardingStep(
             icon: "mic.fill",
             title: "Microphone Permission",
-            description: "Dictator needs access to your microphone to capture your voice.\n\nClick 'Open Settings' to grant permission in System Settings.\n\nNote: The app may restart after granting permission.",
+            description: "Required to capture your voice.",
             actionTitle: "Open Settings",
             action: .requestMicrophone
         ),
         OnboardingStep(
             icon: "key.fill",
             title: "API Key (Optional)",
-            description: "",
+            description: "Add OpenRouter API key to enable AI-powered transcript cleanup.",
             actionTitle: "Continue",
             action: .apiKeyInput
         ),
         OnboardingStep(
             icon: "checkmark.circle.fill",
             title: "You're All Set!",
-            description: "Dictator is ready to use.\n\nHold fn key to start recording.\n\nAccess settings anytime from the menu bar icon.",
+            description: "Hold fn key to start recording.\n\nAccess settings anytime from the menu bar icon.",
             actionTitle: "Finish"
         )
     ]
@@ -77,11 +77,11 @@ struct OnboardingWindow: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
-                // Permission error message
-                if showPermissionError {
-                    Text(permissionErrorMessage)
+                // Waiting for permission message
+                if isWaitingForPermission {
+                    Text("You must grant permission to proceed")
                         .font(.body)
-                        .foregroundColor(.red)
+                        .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 50)
                         .padding(.top, 10)
@@ -139,15 +139,10 @@ struct OnboardingWindow: View {
                         .buttonStyle(.bordered)
                     }
 
-                    // For permission steps, show both "Open Settings" and "Continue" buttons
+                    // For permission steps, show single "Grant Permission" button
                     if steps[currentStep].action == .requestAccessibility || steps[currentStep].action == .requestMicrophone {
-                        Button("Open Settings") {
-                            openPermissionSettings()
-                        }
-                        .buttonStyle(.bordered)
-
-                        Button("Continue") {
-                            validatePermissionAndAdvance()
+                        Button("Grant Permission") {
+                            requestPermissionAndStartMonitoring()
                         }
                         .buttonStyle(.borderedProminent)
                     } else {
@@ -161,6 +156,10 @@ struct OnboardingWindow: View {
             }
         }
         .frame(width: 600, height: 450)
+        .onDisappear {
+            // Clean up timer when view disappears
+            permissionCheckTimer?.invalidate()
+        }
     }
 
     private func handleAction() {
@@ -175,52 +174,52 @@ struct OnboardingWindow: View {
         }
     }
 
-    private func openPermissionSettings() {
-        // Clear any previous error
-        showPermissionError = false
+    private func requestPermissionAndStartMonitoring() {
+        // Show waiting message
+        isWaitingForPermission = true
 
+        // Open settings based on current step
         switch steps[currentStep].action {
         case .requestAccessibility:
             openAccessibilitySettings()
+            startPermissionMonitoring(checkAccessibility: true)
         case .requestMicrophone:
             requestMicrophonePermission()
+            startPermissionMonitoring(checkAccessibility: false)
         default:
             break
         }
     }
 
-    private func validatePermissionAndAdvance() {
-        // Clear any previous error
-        showPermissionError = false
+    private func startPermissionMonitoring(checkAccessibility: Bool) {
+        // Stop any existing timer
+        permissionCheckTimer?.invalidate()
 
-        switch steps[currentStep].action {
-        case .requestAccessibility:
-            if AXIsProcessTrusted() {
-                print("[Onboarding] Accessibility permission granted")
-                advance()
+        // Start polling for permission status
+        permissionCheckTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [self] timer in
+            let granted: Bool
+            if checkAccessibility {
+                granted = AXIsProcessTrusted()
             } else {
-                showPermissionError = true
-                permissionErrorMessage = "Please enable Accessibility permission in System Settings before continuing."
-                print("[Onboarding] Accessibility permission not granted")
+                granted = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
             }
 
-        case .requestMicrophone:
-            let status = AVCaptureDevice.authorizationStatus(for: .audio)
-            if status == .authorized {
-                print("[Onboarding] Microphone permission granted")
-                advance()
-            } else {
-                showPermissionError = true
-                permissionErrorMessage = "Please enable Microphone permission in System Settings before continuing."
-                print("[Onboarding] Microphone permission not granted: \(status.rawValue)")
+            if granted {
+                timer.invalidate()
+                DispatchQueue.main.async {
+                    print("[Onboarding] Permission granted, advancing")
+                    isWaitingForPermission = false
+                    advance()
+                }
             }
-
-        default:
-            advance()
         }
     }
 
     private func advance() {
+        // Stop any active permission monitoring
+        permissionCheckTimer?.invalidate()
+        isWaitingForPermission = false
+
         if currentStep < steps.count - 1 {
             withAnimation {
                 currentStep += 1
