@@ -8,6 +8,7 @@ final class StatusBarController {
     enum IconState {
         case idle
         case recording
+        case transcribing
         case processing
         case error
     }
@@ -25,6 +26,7 @@ final class StatusBarController {
 
     private let normalIcon = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: "Dictator")
     private let recordingIcon = NSImage(systemSymbolName: "mic.circle.fill", accessibilityDescription: "Recording")
+    private let transcribingIcon = NSImage(systemSymbolName: "waveform.circle.fill", accessibilityDescription: "Transcribing")
     private let processingIcon = NSImage(systemSymbolName: "ellipsis.circle.fill", accessibilityDescription: "Processing")
     private let errorIcon = NSImage(systemSymbolName: "mic.slash.fill", accessibilityDescription: "Error")
 
@@ -65,6 +67,9 @@ final class StatusBarController {
             button.appearsDisabled = false
         case .recording:
             icon = recordingIcon
+            button.appearsDisabled = false
+        case .transcribing:
+            icon = transcribingIcon
             button.appearsDisabled = false
         case .processing:
             icon = processingIcon
@@ -113,6 +118,9 @@ final class StatusBarController {
         case .recording:
             setIconState(.recording)
             statusMenuItem.title = "Status: Recording..."
+        case .transcribing:
+            setIconState(.transcribing)
+            statusMenuItem.title = "Status: Transcribing..."
         case .processing:
             setIconState(.processing)
             statusMenuItem.title = "Status: Processing..."

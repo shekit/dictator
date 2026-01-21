@@ -145,7 +145,7 @@
             "swift package resolve succeeds",
             "Can import FluidAudio in code"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "3.2",
@@ -156,7 +156,7 @@
             "Model downloads (~2.5 GB)",
             "Model files exist in cache directory"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "3.3",
@@ -166,7 +166,7 @@
             "AsrManager initializes without error",
             "Console logs 'ASR model loaded'"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "3.4",
@@ -175,7 +175,7 @@
             "Hold hotkey, say 'hello world', release",
             "Console logs transcription containing 'hello' and 'world'"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "3.5",
@@ -185,7 +185,7 @@
             "App does not crash",
             "Returns empty string or handles gracefully"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "3.6",
@@ -195,7 +195,7 @@
             "Menu bar shows processing indicator",
             "Indicator clears when done"
           ],
-          "passes": false
+          "passes": true
         }
       ]
     },

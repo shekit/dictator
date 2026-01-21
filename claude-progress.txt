@@ -96,3 +96,41 @@ This file tracks progress across coding sessions. Append new entries at the bott
 
 ---
 
+## Session 3 - 2026-01-20 (Phase 3 Complete)
+- Implemented all Phase 3 features (3.1 - 3.6)
+- Integrated FluidAudio library for speech-to-text transcription
+- Created TranscriptionService to wrap AsrManager with proper serialization
+- Updated RecordingService to transcribe audio after recording stops
+- Added transcribing state and visual indicator to UI
+
+### Files Created
+- Dictator/Sources/Dictator/STT/TranscriptionService.swift
+
+### Files Modified
+- Dictator/Package.swift (added FluidAudio dependency from GitHub)
+- Dictator/Sources/Dictator/Audio/RecordingService.swift (added transcription flow)
+- Dictator/Sources/Dictator/UI/StatusBarController.swift (added transcribing state)
+- Dictator/Sources/Dictator/App/AppDelegate.swift (model preloading, transcription callback)
+
+### Implementation Details
+- FluidAudio dependency: `https://github.com/FluidInference/FluidAudio` version 0.10.0
+- Uses Parakeet TDT v2 model (~450MB) - downloads automatically on first run
+- Models stored in `~/Library/Application Support/FluidAudio/Models/`
+- TranscriptionExecutor actor serializes FluidAudio calls (CoreML requirement)
+- Empty recording handling: rejects audio < 100ms (1600 samples at 16kHz)
+- Menu bar icon: waveform.circle.fill during transcription
+- Lazy model loading: starts in background at launch, ready for first transcription
+
+### Verification
+- `swift build` succeeds without errors
+- `swift package resolve` fetches FluidAudio successfully
+- Model files download to Application Support on first run
+- App handles empty/silent recordings gracefully
+- Menu bar shows transcribing state during processing
+
+### Current State
+- Phase 3 complete (6/6 features passing)
+- Next: Phase 4, Feature 4.1 (Request Accessibility permission)
+
+---
+

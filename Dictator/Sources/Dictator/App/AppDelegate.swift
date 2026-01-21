@@ -19,10 +19,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let service = recordingService {
             statusBarController?.setRecordingService(service)
 
-            // Set up callback for when recording completes
-            service.onRecordingComplete = { samples, duration in
-                print("[App] Recording complete - \(samples.count) samples, \(String(format: "%.2f", duration))s")
-                // Future phases will handle transcription here
+            // Set up callback for when transcription completes
+            service.onTranscriptionComplete = { text, duration in
+                print("[App] Transcription complete - '\(text)' (\(String(format: "%.2f", duration))s)")
+                // Future phases will handle text injection here
             }
         }
 
@@ -30,10 +30,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Audio services need UI to be fully ready before initializing
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
             self?.recordingService?.initialize()
+
+            // Start loading ASR models in background
+            // First recording will wait if not ready, but we start early for faster first use
+            Task {
+                do {
+                    print("[App] Starting ASR model preparation...")
+                    try await TranscriptionService.shared.prepareModels()
+                    print("[App] ASR models ready")
+                } catch {
+                    print("[App] Failed to prepare ASR models: \(error)")
+                    // Models will be loaded on first transcription attempt
+                }
+            }
         }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        TranscriptionService.shared.cleanup()
         recordingService?.shutdown()
         recordingService = nil
         statusBarController = nil

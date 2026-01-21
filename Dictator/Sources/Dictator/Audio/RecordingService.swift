@@ -10,6 +10,7 @@ final class RecordingService: ObservableObject {
     enum State {
         case idle
         case recording
+        case transcribing
         case processing
         case error(String)
     }
@@ -19,15 +20,17 @@ final class RecordingService: ObservableObject {
     @Published private(set) var state: State = .idle
     @Published private(set) var lastRecordingDuration: TimeInterval = 0
     @Published private(set) var lastBufferSize: Int = 0
+    @Published private(set) var lastTranscription: String = ""
 
     // MARK: - Properties
 
     private var hotkeyManager: GlobalHotkeyManager?
     private let audioRecorder: AudioRecorder
+    private let transcriptionService = TranscriptionService.shared
     private var isInitialized = false
 
-    /// Callback when recording completes with audio samples
-    var onRecordingComplete: (([Float], TimeInterval) -> Void)?
+    /// Callback when transcription completes
+    var onTranscriptionComplete: ((String, TimeInterval) -> Void)?
 
     // MARK: - Initialization
 
@@ -144,14 +147,50 @@ final class RecordingService: ObservableObject {
 
         lastRecordingDuration = result.duration
         lastBufferSize = result.samples.count
-        state = .processing
 
         print("[RecordingService] Recording stopped - Duration: \(String(format: "%.2f", result.duration))s, Samples: \(result.samples.count)")
 
-        // Notify callback with recorded audio
-        onRecordingComplete?(result.samples, result.duration)
+        // Start transcription
+        transcribeAudio(samples: result.samples, duration: result.duration)
+    }
 
-        // For now, return to idle (later phases will handle transcription)
-        state = .idle
+    private func transcribeAudio(samples: [Float], duration: TimeInterval) {
+        state = .transcribing
+
+        Task {
+            do {
+                // Ensure models are loaded
+                if !transcriptionService.isModelLoaded {
+                    print("[RecordingService] Models not loaded, loading now...")
+                    try await transcriptionService.prepareModels()
+                }
+
+                // Transcribe
+                let text = try await transcriptionService.transcribe(samples)
+                lastTranscription = text
+
+                state = .processing
+
+                // Notify callback
+                onTranscriptionComplete?(text, duration)
+
+                print("[RecordingService] Transcription complete: '\(text)'")
+
+                // Return to idle
+                state = .idle
+
+            } catch {
+                state = .error("Transcription failed: \(error.localizedDescription)")
+                print("[RecordingService] Transcription error: \(error)")
+
+                // Return to idle after a brief delay so user sees error
+                Task {
+                    try? await Task.sleep(for: .seconds(2))
+                    if case .error = self.state {
+                        self.state = .idle
+                    }
+                }
+            }
+        }
     }
 }
