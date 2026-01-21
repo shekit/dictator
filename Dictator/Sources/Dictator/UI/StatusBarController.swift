@@ -23,7 +23,7 @@ final class StatusBarController {
     private let settingsItem: NSMenuItem
     private let statusMenuItem = NSMenuItem()
     private let statsMenuItem = NSMenuItem()
-    private var modeSubmenu = NSMenu()
+    private var modeMenuItems: [NSMenuItem] = []
     private let quitAction: () -> Void
 
     private var recordingService: RecordingService?
@@ -81,12 +81,11 @@ final class StatusBarController {
         service.$isOllamaAvailable
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                self?.buildModeSubmenu()
+                self?.updateLLMMenuItems()
             }
             .store(in: &cancellables)
 
         // Initial update
-        buildModeSubmenu()
         updateLLMMenuItems()
     }
 
@@ -151,25 +150,28 @@ final class StatusBarController {
         updateTodayStats()
         statsMenuItem.isEnabled = false
 
-        // Mode selection submenu (Raw/Local/Cloud)
-        let modeMenuItem = NSMenuItem(title: "Processing Mode", action: nil, keyEquivalent: "")
-        buildModeSubmenu()
-        modeMenuItem.submenu = modeSubmenu
+        // Build mode menu items
+        buildModeMenuItems()
 
-        menu.items = [
+        // Build menu with mode items directly in main menu
+        var menuItems: [NSMenuItem] = [
             statsMenuItem,
-            NSMenuItem.separator(),
-            modeMenuItem,
+            NSMenuItem.separator()
+        ]
+        menuItems.append(contentsOf: modeMenuItems)
+        menuItems.append(contentsOf: [
             NSMenuItem.separator(),
             settingsItem,
             NSMenuItem.separator(),
             quitItem
-        ]
+        ])
+
+        menu.items = menuItems
         statusItem.menu = menu
     }
 
-    private func buildModeSubmenu() {
-        modeSubmenu.removeAllItems()
+    private func buildModeMenuItems() {
+        modeMenuItems.removeAll()
 
         guard let service = llmService else { return }
 
@@ -186,21 +188,29 @@ final class StatusBarController {
             let item = NSMenuItem(title: title, action: #selector(handleModeSelection(_:)), keyEquivalent: "")
             item.target = self
             item.representedObject = mode.rawValue
-            modeSubmenu.addItem(item)
-        }
-
-        // Update checkmarks
-        for item in modeSubmenu.items {
-            if let modeRaw = item.representedObject as? String {
-                item.state = modeRaw == service.processingMode.rawValue ? .on : .off
-            }
+            item.state = mode.rawValue == service.processingMode.rawValue ? .on : .off
+            modeMenuItems.append(item)
         }
     }
 
 
     private func updateLLMMenuItems() {
-        // Rebuild mode submenu to update availability status and checkmarks
-        buildModeSubmenu()
+        // Rebuild mode menu items to update availability status and checkmarks
+        buildModeMenuItems()
+
+        // Rebuild entire menu to reflect updated mode items
+        var menuItems: [NSMenuItem] = [
+            statsMenuItem,
+            NSMenuItem.separator()
+        ]
+        menuItems.append(contentsOf: modeMenuItems)
+        menuItems.append(contentsOf: [
+            NSMenuItem.separator(),
+            settingsItem,
+            NSMenuItem.separator(),
+            quitItem
+        ])
+        menu.items = menuItems
     }
 
     @objc private func handleModeSelection(_ sender: NSMenuItem) {
