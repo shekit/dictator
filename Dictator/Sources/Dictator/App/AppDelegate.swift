@@ -32,9 +32,44 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             statusBarController?.setLLMService(LLMService.shared)
 
             // Set up callback for when transcription completes
-            service.onTranscriptionComplete = { rawText, processedText, duration, wasProcessed in
+            service.onTranscriptionComplete = { [weak statusBarController] rawText, processedText, duration, wasProcessed in
                 let status = wasProcessed ? "LLM cleaned" : "raw"
                 print("[App] Transcription complete (\(status)) - '\(processedText)' (\(String(format: "%.2f", duration))s)")
+
+                // Record stats
+                let stats = StatsService.shared.recordTranscription(text: processedText, duration: duration)
+
+                // Update status bar with today's stats
+                statusBarController?.updateTodayStats()
+
+                // Log to file
+                let llmService = LLMService.shared
+                let mode: String
+                let model: String
+
+                switch llmService.processingMode {
+                case .cloud:
+                    mode = "cloud"
+                    model = llmService.selectedCloudModel
+                case .local:
+                    mode = "local"
+                    model = llmService.selectedLocalModel
+                case .off:
+                    mode = "off"
+                    model = "none"
+                }
+
+                Task {
+                    await TranscriptionLogger.shared.log(
+                        rawText: rawText,
+                        cleanedText: processedText,
+                        wordCount: stats.wordCount,
+                        duration: stats.duration,
+                        wpm: stats.wpm,
+                        mode: mode,
+                        model: model
+                    )
+                }
             }
         }
 

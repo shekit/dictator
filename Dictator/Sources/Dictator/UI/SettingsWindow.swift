@@ -8,12 +8,16 @@ struct SettingsWindow: View {
     enum SettingsTab: String, CaseIterable {
         case prompts = "Prompts"
         case dictionary = "Dictionary"
+        case history = "History"
+        case stats = "Stats"
         case settings = "Settings"
 
         var icon: String {
             switch self {
             case .prompts: return "text.alignleft"
             case .dictionary: return "book.closed"
+            case .history: return "clock.arrow.circlepath"
+            case .stats: return "chart.bar"
             case .settings: return "gearshape"
             }
         }
@@ -40,6 +44,12 @@ struct SettingsWindow: View {
 
                 DictionaryTabView(llmService: llmService)
                     .tag(SettingsTab.dictionary)
+
+                HistoryTabView()
+                    .tag(SettingsTab.history)
+
+                StatsTabView()
+                    .tag(SettingsTab.stats)
 
                 SettingsTabView(llmService: llmService)
                     .tag(SettingsTab.settings)
@@ -389,5 +399,259 @@ struct SettingsTabView: View {
             }
             .padding()
         }
+    }
+}
+
+// MARK: - History Tab
+
+struct HistoryTabView: View {
+    @State private var entries: [TranscriptionLogger.LogEntry] = []
+    @State private var isLoading = true
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                Text("Transcription History")
+                    .font(.headline)
+
+                Spacer()
+
+                Text("\(entries.count) recordings")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                Button("Refresh") {
+                    loadEntries()
+                }
+                .buttonStyle(.bordered)
+            }
+            .padding()
+
+            Divider()
+
+            // List of entries
+            if isLoading {
+                VStack {
+                    Spacer()
+                    ProgressView("Loading history...")
+                    Spacer()
+                }
+            } else if entries.isEmpty {
+                VStack {
+                    Spacer()
+                    Text("No transcriptions yet")
+                        .foregroundColor(.secondary)
+                    Text("Start recording to see your history here")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                }
+            } else {
+                List(entries, id: \.timestamp) { entry in
+                    HistoryEntryRow(entry: entry)
+                }
+            }
+        }
+        .onAppear {
+            loadEntries()
+        }
+    }
+
+    private func loadEntries() {
+        isLoading = true
+        Task {
+            let loaded = await TranscriptionLogger.shared.recentEntries(limit: 100)
+            await MainActor.run {
+                entries = loaded
+                isLoading = false
+            }
+        }
+    }
+}
+
+struct HistoryEntryRow: View {
+    let entry: TranscriptionLogger.LogEntry
+
+    private var formattedTimestamp: String {
+        // Parse ISO 8601 timestamp and format it nicely
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = formatter.date(from: entry.timestamp) {
+            let displayFormatter = DateFormatter()
+            displayFormatter.dateStyle = .medium
+            displayFormatter.timeStyle = .short
+            return displayFormatter.string(from: date)
+        }
+        return entry.timestamp
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Timestamp and metadata
+            HStack {
+                Text(formattedTimestamp)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                Spacer()
+
+                Text("\(entry.wordCount) words")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                Text("•")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                Text(String(format: "%.0f WPM", entry.wpm))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                Text("•")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                Text(entry.mode)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            // Cleaned text (what was actually typed)
+            Text(entry.cleanedText)
+                .font(.body)
+                .lineLimit(3)
+
+            // Show raw text if different
+            if entry.rawText != entry.cleanedText {
+                Text("Raw: \(entry.rawText)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .italic()
+                    .lineLimit(2)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+// MARK: - Stats Tab
+
+struct StatsTabView: View {
+    @ObservedObject private var statsService = StatsService.shared
+
+    private var weekStats: (words: Int, recordings: Int, averageWPM: Double) {
+        statsService.weekStats()
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                // Today's Stats
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Today")
+                        .font(.title2.bold())
+
+                    HStack(spacing: 40) {
+                        StatBox(
+                            title: "Words",
+                            value: "\(statsService.todayStats.totalWords)",
+                            icon: "text.word.spacing"
+                        )
+
+                        StatBox(
+                            title: "Recordings",
+                            value: "\(statsService.todayStats.recordingCount)",
+                            icon: "mic.fill"
+                        )
+
+                        StatBox(
+                            title: "Avg WPM",
+                            value: String(format: "%.0f", statsService.todayStats.averageWPM),
+                            icon: "speedometer"
+                        )
+                    }
+                }
+
+                Divider()
+
+                // This Week Stats
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("This Week (Last 7 Days)")
+                        .font(.title2.bold())
+
+                    HStack(spacing: 40) {
+                        StatBox(
+                            title: "Words",
+                            value: "\(weekStats.words)",
+                            icon: "text.word.spacing"
+                        )
+
+                        StatBox(
+                            title: "Recordings",
+                            value: "\(weekStats.recordings)",
+                            icon: "mic.fill"
+                        )
+
+                        StatBox(
+                            title: "Avg WPM",
+                            value: String(format: "%.0f", weekStats.averageWPM),
+                            icon: "speedometer"
+                        )
+                    }
+                }
+
+                Divider()
+
+                // All-Time Stats
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("All Time")
+                        .font(.title2.bold())
+
+                    HStack(spacing: 40) {
+                        StatBox(
+                            title: "Total Words",
+                            value: "\(statsService.totalWordsAllTime)",
+                            icon: "text.word.spacing"
+                        )
+
+                        StatBox(
+                            title: "Total Recordings",
+                            value: "\(statsService.totalRecordingsAllTime)",
+                            icon: "mic.fill"
+                        )
+
+                        StatBox(
+                            title: "Avg WPM",
+                            value: String(format: "%.0f", statsService.averageWPMAllTime),
+                            icon: "speedometer"
+                        )
+                    }
+                }
+            }
+            .padding()
+        }
+    }
+}
+
+struct StatBox: View {
+    let title: String
+    let value: String
+    let icon: String
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.title2)
+                .foregroundColor(.accentColor)
+
+            Text(value)
+                .font(.title.bold())
+
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .frame(minWidth: 120)
     }
 }

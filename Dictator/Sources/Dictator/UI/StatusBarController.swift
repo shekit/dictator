@@ -22,6 +22,7 @@ final class StatusBarController {
     private let quitItem: NSMenuItem
     private let settingsItem: NSMenuItem
     private let statusMenuItem = NSMenuItem()
+    private let statsMenuItem = NSMenuItem()
     private let llmStatusMenuItem = NSMenuItem()
     private var modeSubmenu = NSMenu()
     private var cloudModelSubmenu = NSMenu()
@@ -145,6 +146,17 @@ final class StatusBarController {
         button.image = icon
     }
 
+    /// Update today's stats display in the menu.
+    func updateTodayStats() {
+        let stats = StatsService.shared.todayStats
+        if stats.recordingCount == 0 {
+            statsMenuItem.title = "Today: No recordings yet"
+        } else {
+            let avgWPM = String(format: "%.0f", stats.averageWPM)
+            statsMenuItem.title = "Today: \(stats.totalWords) words | \(avgWPM) WPM"
+        }
+    }
+
     // MARK: - Private Methods
 
     private func configureButton() {
@@ -164,6 +176,10 @@ final class StatusBarController {
         // Status display item (disabled, just for info)
         statusMenuItem.title = "Status: Ready"
         statusMenuItem.isEnabled = false
+
+        // Stats display item (disabled, just for info)
+        updateTodayStats()
+        statsMenuItem.isEnabled = false
 
         // LLM status display (disabled, just for info)
         llmStatusMenuItem.title = "LLM: Loading..."
@@ -186,6 +202,7 @@ final class StatusBarController {
 
         menu.items = [
             statusMenuItem,
+            statsMenuItem,
             NSMenuItem.separator(),
             llmStatusMenuItem,
             modeMenuItem,

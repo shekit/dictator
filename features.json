@@ -589,7 +589,7 @@
             "Console logs word count",
             "Count matches actual words"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "8.2",
@@ -599,7 +599,7 @@
             "Console logs WPM",
             "WPM = (word count / recording duration) * 60"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "8.3",
@@ -609,7 +609,7 @@
             "Shows 'Today: X words | Y WPM'",
             "Stats update after each transcription"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "8.4",
@@ -620,7 +620,7 @@
             "Quit and relaunch",
             "Stats are preserved"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "8.5",
@@ -630,7 +630,7 @@
             "New day starts fresh count",
             "Historical days preserved"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "8.6",
@@ -640,7 +640,7 @@
             "File exists at ~/Documents/Dictator/transcriptions.jsonl",
             "File is valid JSON lines format"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "8.7",
@@ -649,7 +649,7 @@
             "Read log file entry",
             "Contains: timestamp, raw_text, cleaned_text, word_count, duration, wpm, mode, model"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "8.8",
@@ -660,7 +660,7 @@
             "Shows timestamp and text preview",
             "Can scroll through history"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "8.9",
@@ -670,7 +670,7 @@
             "Shows today, this week, all-time stats",
             "Shows total words, average WPM, total recordings"
           ],
-          "passes": false
+          "passes": true
         }
       ]
     },
