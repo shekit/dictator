@@ -105,3 +105,33 @@
 
 **Commit**: 2c0300e - Fix onboarding UX: preserve Complete Setup menu item and quit on dismissal
 
+
+## 2026-01-21 - Remove redundant Skip button from API key step
+
+**User Feedback**: "on the page where it says enter optional open API router key. We don't need to have three buttons. We don't need to have skip and continue. Just have continue"
+
+**Implementation**: Removed the Skip button from the API key onboarding step. The Continue button now handles both cases automatically:
+- If field is empty: continues without saving (same as skip behavior)
+- If field is filled: saves API key and continues
+
+**Result**: Cleaner UI with less button clutter, more intuitive flow.
+
+**Commit**: cf0d130 - Remove redundant Skip button from API key onboarding step
+
+
+## 2026-01-21 - Consolidate reset onboarding into build script
+
+**User Request**: "Can you also consolidate the reset onboarding script into the build app script? Because if I'm building the app, I just want it to reset the onboarding, too."
+
+**Implementation**: Modified build-app.sh to call reset-onboarding.sh before building the app. This ensures:
+- Fresh onboarding state every time you build for testing
+- reset-onboarding.sh remains separate and independently usable
+- Single command workflow for development
+
+**Changes**:
+- build-app.sh now calls reset-onboarding.sh at start
+- Made reset-onboarding.sh executable (chmod +x)
+- Added explanatory comment in build-app.sh header
+
+**Commit**: 23e8dca - Consolidate reset onboarding into build script
+

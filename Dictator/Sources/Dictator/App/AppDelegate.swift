@@ -183,13 +183,33 @@ extension AppDelegate: NSWindowDelegate {
         let hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
 
         if !hasCompletedOnboarding {
-            // User closed window without completing - quit the app
-            print("[App] Onboarding dismissed - quitting app")
-            onboardingWindowController = nil
-            NSApp.terminate(nil)
-            return
-        }
+            // Check if user was on the final step (index 4)
+            let currentStep = UserDefaults.standard.integer(forKey: "currentOnboardingStep")
 
-        onboardingWindowController = nil
+            if currentStep == 4 {
+                // On final step - treat closing as completion
+                print("[App] Onboarding closed on final step - marking as complete")
+                UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
+                UserDefaults.standard.removeObject(forKey: "currentOnboardingStep")
+
+                onboardingWindowController = nil
+
+                // Update menu item visibility
+                statusBarController?.setOnboardingComplete(true)
+
+                // Initialize services now that onboarding is complete
+                if recordingService == nil {
+                    initializeServices()
+                }
+            } else {
+                // Not on final step - quit the app
+                print("[App] Onboarding dismissed - quitting app")
+                onboardingWindowController = nil
+                NSApp.terminate(nil)
+                return
+            }
+        } else {
+            onboardingWindowController = nil
+        }
     }
 }
