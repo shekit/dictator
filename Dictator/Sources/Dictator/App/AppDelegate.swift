@@ -183,15 +183,11 @@ extension AppDelegate: NSWindowDelegate {
         let hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
 
         if !hasCompletedOnboarding {
-            // User closed window without completing
-            print("[App] Onboarding dismissed")
-
-            // Initialize services if needed (so app is still usable)
-            if recordingService == nil {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-                    self?.initializeServices()
-                }
-            }
+            // User closed window without completing - quit the app
+            print("[App] Onboarding dismissed - quitting app")
+            onboardingWindowController = nil
+            NSApp.terminate(nil)
+            return
         }
 
         onboardingWindowController = nil

@@ -61,3 +61,14 @@
 
 **Commit**: 50392a3 - Add 'fn key' label to clarify keyboard key on onboarding
 
+
+## 2026-01-21 - Fix menu bar dropdown not showing
+
+**User Report**: "this is very broken now, if i quit the app without completing the onboarding and click the icon in the menu bar, the menu dropdown doesnt show"
+
+**Root Cause**: During earlier refactoring, we removed `statusItem.menu = menu` assignment. The menu was being built correctly but never assigned to the status item, so clicking the icon showed nothing.
+
+**Fix**: Added `statusItem.menu = menu` in `configureMenu()` after building the initial menu structure.
+
+**Commit**: cba6622 - Fix menu bar dropdown not showing
+

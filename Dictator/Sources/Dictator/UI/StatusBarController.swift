@@ -234,19 +234,9 @@ final class StatusBarController {
         // Rebuild mode menu items to update availability status and checkmarks
         buildModeMenuItems()
 
-        // Rebuild entire menu to reflect updated mode items
-        var menuItems: [NSMenuItem] = [
-            statsMenuItem,
-            NSMenuItem.separator()
-        ]
-        menuItems.append(contentsOf: modeMenuItems)
-        menuItems.append(contentsOf: [
-            NSMenuItem.separator(),
-            settingsItem,
-            NSMenuItem.separator(),
-            quitItem
-        ])
-        menu.items = menuItems
+        // Use updateMenuForOnboardingStatus to rebuild menu
+        // This ensures "Complete Setup..." is included if onboarding is incomplete
+        updateMenuForOnboardingStatus()
     }
 
     @objc private func handleModeSelection(_ sender: NSMenuItem) {
