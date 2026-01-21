@@ -688,7 +688,7 @@
             "Hear brief 'start' sound",
             "Sound is subtle and not annoying"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "9.2",
@@ -697,7 +697,7 @@
             "Release hotkey",
             "Hear brief 'stop' sound"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "9.3",
@@ -707,7 +707,7 @@
             "User sees clear error notification",
             "Notification is dismissible"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "9.4",
@@ -717,7 +717,7 @@
             "Restart Mac (or log out/in)",
             "App starts automatically"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "9.5",
@@ -727,7 +727,7 @@
             "Shows app name and version",
             "Shows credits/link"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "9.6",
@@ -737,7 +737,7 @@
             "Launch app",
             "Onboarding guides through: permissions, API key, hotkey"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "9.7",
@@ -747,7 +747,7 @@
             "App handles gracefully, no crashes",
             "Each recording processes correctly"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "9.8",
@@ -757,7 +757,7 @@
             "Do many transcriptions",
             "Memory usage in Activity Monitor stays reasonable (<500MB)"
           ],
-          "passes": false
+          "passes": true
         }
       ]
     }

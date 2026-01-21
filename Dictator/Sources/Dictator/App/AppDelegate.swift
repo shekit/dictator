@@ -5,6 +5,7 @@ import SwiftUI
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusBarController: StatusBarController?
     private var recordingService: RecordingService?
+    private var onboardingWindowController: NSWindowController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Load environment variables first
@@ -73,6 +74,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
+        // Check if this is first run
+        let hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
+        if !hasCompletedOnboarding {
+            // Show onboarding on next run loop after UI is ready
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                self?.showOnboarding()
+            }
+        }
+
         // CRITICAL: Delay service initialization to avoid race conditions
         // Audio services need UI to be fully ready before initializing
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
@@ -102,5 +112,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func terminate() {
         NSApp.terminate(nil)
+    }
+
+    private func showOnboarding() {
+        let onboardingView = OnboardingWindow { [weak self] in
+            // Mark onboarding as complete
+            UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
+            print("[App] Onboarding completed")
+
+            // Close onboarding window
+            self?.onboardingWindowController?.close()
+            self?.onboardingWindowController = nil
+        }
+
+        let hostingController = NSHostingController(rootView: onboardingView)
+        let window = NSWindow(contentViewController: hostingController)
+        window.title = "Welcome to Dictator"
+        window.styleMask = [.titled, .closable]
+        window.setContentSize(NSSize(width: 600, height: 450))
+        window.center()
+        window.level = .floating  // Keep on top
+
+        let windowController = NSWindowController(window: window)
+        onboardingWindowController = windowController
+
+        windowController.showWindow(nil)
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
 }

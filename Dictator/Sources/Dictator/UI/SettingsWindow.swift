@@ -264,6 +264,7 @@ struct DictionaryEntryRow: View {
 
 struct SettingsTabView: View {
     @ObservedObject var llmService: LLMService
+    @ObservedObject var launchAtLogin = LaunchAtLoginService.shared
 
     var body: some View {
         ScrollView {
@@ -278,6 +279,24 @@ struct SettingsTabView: View {
                         .foregroundColor(.secondary)
 
                     Text("Note: Hotkey configuration is currently fixed to the fn key.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                Divider()
+
+                // Launch at Login
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Startup")
+                        .font(.headline)
+
+                    Toggle("Launch at login", isOn: Binding(
+                        get: { launchAtLogin.isEnabled },
+                        set: { launchAtLogin.setEnabled($0) }
+                    ))
+                    .toggleStyle(.switch)
+
+                    Text("Automatically start Dictator when you log in")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }

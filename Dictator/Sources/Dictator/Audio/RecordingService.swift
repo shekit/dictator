@@ -31,6 +31,8 @@ final class RecordingService: ObservableObject {
     private let transcriptionService = TranscriptionService.shared
     private let textInjectionService = TextInjectionService.shared
     private let llmService = LLMService.shared
+    private let soundEffectService = SoundEffectService.shared
+    private let notificationService = NotificationService.shared
     private var isInitialized = false
 
     /// Callback when transcription completes (called after text injection)
@@ -123,18 +125,23 @@ final class RecordingService: ObservableObject {
         // Check permission first
         if audioRecorder.permissionStatus == .notDetermined {
             audioRecorder.requestMicrophoneAccess()
-            state = .error("Microphone permission required")
+            let errorMsg = "Microphone permission required"
+            state = .error(errorMsg)
+            notificationService.showError(message: errorMsg)
             return
         }
 
         if audioRecorder.permissionStatus == .denied {
-            state = .error("Microphone access denied. Please enable in System Settings.")
+            let errorMsg = "Microphone access denied. Please enable in System Settings."
+            state = .error(errorMsg)
+            notificationService.showError(message: errorMsg)
             print("[RecordingService] Microphone permission denied - cannot record")
             return
         }
 
         audioRecorder.startRecording()
         state = .recording
+        soundEffectService.playRecordingStart()
         print("[RecordingService] Recording started")
     }
 
@@ -152,6 +159,7 @@ final class RecordingService: ObservableObject {
 
         lastRecordingDuration = result.duration
         lastBufferSize = result.samples.count
+        soundEffectService.playRecordingStop()
 
         print("[RecordingService] Recording stopped - Duration: \(String(format: "%.2f", result.duration))s, Samples: \(result.samples.count)")
 
@@ -211,7 +219,9 @@ final class RecordingService: ObservableObject {
                 state = .idle
 
             } catch {
-                state = .error("Transcription failed: \(error.localizedDescription)")
+                let errorMsg = "Transcription failed: \(error.localizedDescription)"
+                state = .error(errorMsg)
+                notificationService.showError(title: "Transcription Failed", message: error.localizedDescription)
                 print("[RecordingService] Transcription error: \(error)")
 
                 // Return to idle after a brief delay so user sees error
