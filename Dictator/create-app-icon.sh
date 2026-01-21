@@ -18,6 +18,8 @@ fi
 INPUT_IMAGE="$1"
 ICONSET="AppIcon.iconset"
 OUTPUT_ICON="AppIcon.icns"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+RESOURCES_DIR="$SCRIPT_DIR/Sources/Dictator/Resources"
 
 if [ ! -f "$INPUT_IMAGE" ]; then
     echo "Error: Input file '$INPUT_IMAGE' not found"
@@ -56,8 +58,13 @@ rm -rf "$ICONSET"
 
 echo "✅ Icon created: $OUTPUT_ICON"
 echo ""
-echo "Next steps:"
-echo "  1. Move AppIcon.icns to Dictator/Sources/Dictator/Resources/"
-echo "  2. Update Info.plist to reference the icon"
-echo "  3. Rebuild the app"
+
+# Move to Resources directory
+echo "📁 Installing icon to Resources directory..."
+mkdir -p "$RESOURCES_DIR"
+mv "$OUTPUT_ICON" "$RESOURCES_DIR/"
+
+echo "✅ Icon installed: $RESOURCES_DIR/AppIcon.icns"
+echo ""
+echo "🎉 All done! Run ./package-for-distribution.sh to build your app with the icon."
 echo ""
