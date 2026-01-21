@@ -79,11 +79,11 @@ final class EnvLoader {
     }
 
     /// Get OpenRouter API key.
-    /// Checks Keychain first, then falls back to .env file.
+    /// Checks UserDefaults first, then falls back to .env file.
     var openRouterAPIKey: String? {
-        // First check Keychain (user entered via UI)
-        if let keychainKey = KeychainManager.shared.openRouterAPIKey {
-            return keychainKey
+        // First check UserDefaults (user entered via UI)
+        if let userDefaultsKey = UserDefaults.standard.string(forKey: "openRouterAPIKey"), !userDefaultsKey.isEmpty {
+            return userDefaultsKey
         }
 
         // Fall back to .env file (for developers/power users)

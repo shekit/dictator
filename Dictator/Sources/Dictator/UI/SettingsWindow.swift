@@ -331,7 +331,7 @@ struct SettingsTabView: View {
                                 }
                                 .buttonStyle(.bordered)
 
-                                if KeychainManager.shared.openRouterAPIKey != nil {
+                                if UserDefaults.standard.string(forKey: "openRouterAPIKey") != nil {
                                     Button("Remove") {
                                         removeAPIKey()
                                     }
@@ -357,15 +357,15 @@ struct SettingsTabView: View {
 
                             Spacer()
 
-                            Button(KeychainManager.shared.openRouterAPIKey != nil ? "Edit" : "Add") {
+                            Button(UserDefaults.standard.string(forKey: "openRouterAPIKey") != nil ? "Edit" : "Add") {
                                 isEditingAPIKey = true
                                 loadAPIKey()
                             }
                             .buttonStyle(.bordered)
                         }
 
-                        if KeychainManager.shared.openRouterAPIKey != nil {
-                            Text("API key stored securely in Keychain")
+                        if UserDefaults.standard.string(forKey: "openRouterAPIKey") != nil {
+                            Text("API key stored locally")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         } else if let envPath = EnvLoader.shared.envFileLocation {
@@ -464,23 +464,23 @@ struct SettingsTabView: View {
     }
 
     private func loadAPIKey() {
-        apiKey = KeychainManager.shared.openRouterAPIKey ?? ""
+        apiKey = UserDefaults.standard.string(forKey: "openRouterAPIKey") ?? ""
     }
 
     private func saveAPIKey() {
         let trimmed = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty {
-            KeychainManager.shared.openRouterAPIKey = trimmed
-            print("[Settings] API key saved to Keychain")
+            UserDefaults.standard.set(trimmed, forKey: "openRouterAPIKey")
+            print("[Settings] API key saved")
         }
         isEditingAPIKey = false
     }
 
     private func removeAPIKey() {
-        KeychainManager.shared.openRouterAPIKey = nil
+        UserDefaults.standard.removeObject(forKey: "openRouterAPIKey")
         apiKey = ""
         isEditingAPIKey = false
-        print("[Settings] API key removed from Keychain")
+        print("[Settings] API key removed")
     }
 }
 

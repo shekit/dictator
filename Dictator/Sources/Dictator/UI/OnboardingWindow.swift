@@ -3,10 +3,17 @@ import AVFoundation
 
 /// Onboarding window for first-time users.
 struct OnboardingWindow: View {
-    @State private var currentStep = 0
+    @State private var currentStep: Int
     @State private var apiKey: String = ""
     @Environment(\.dismiss) private var dismiss
     let onComplete: () -> Void
+
+    init(onComplete: @escaping () -> Void) {
+        self.onComplete = onComplete
+        // Resume from saved step or start at 0
+        let savedStep = UserDefaults.standard.integer(forKey: "currentOnboardingStep")
+        _currentStep = State(initialValue: savedStep)
+    }
 
     private let steps = [
         OnboardingStep(
@@ -16,18 +23,18 @@ struct OnboardingWindow: View {
             actionTitle: "Get Started"
         ),
         OnboardingStep(
-            icon: "mic.fill",
-            title: "Microphone Permission",
-            description: "Dictator needs access to your microphone to capture your voice.\n\nClick 'Open Settings' to grant permission in System Settings.",
-            actionTitle: "Open Settings",
-            action: .requestMicrophone
-        ),
-        OnboardingStep(
             icon: "hand.point.up.left",
             title: "Accessibility Permission",
             description: "Dictator needs Accessibility permission to inject text at your cursor.\n\nClick 'Open Settings' and enable Dictator in Privacy & Security > Accessibility.",
             actionTitle: "Open Settings",
             action: .requestAccessibility
+        ),
+        OnboardingStep(
+            icon: "mic.fill",
+            title: "Microphone Permission",
+            description: "Dictator needs access to your microphone to capture your voice.\n\nClick 'Open Settings' to grant permission in System Settings.\n\nNote: The app may restart after granting permission.",
+            actionTitle: "Open Settings",
+            action: .requestMicrophone
         ),
         OnboardingStep(
             icon: "key.fill",
@@ -151,8 +158,12 @@ struct OnboardingWindow: View {
         if currentStep < steps.count - 1 {
             withAnimation {
                 currentStep += 1
+                // Save progress in case app restarts
+                UserDefaults.standard.set(currentStep, forKey: "currentOnboardingStep")
             }
         } else {
+            // Onboarding complete - clear progress tracking
+            UserDefaults.standard.removeObject(forKey: "currentOnboardingStep")
             onComplete()
         }
     }
@@ -174,8 +185,8 @@ struct OnboardingWindow: View {
     private func saveAPIKey() {
         let trimmed = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty {
-            KeychainManager.shared.openRouterAPIKey = trimmed
-            print("[Onboarding] API key saved to Keychain")
+            UserDefaults.standard.set(trimmed, forKey: "openRouterAPIKey")
+            print("[Onboarding] API key saved")
         } else {
             print("[Onboarding] No API key entered, skipped")
         }

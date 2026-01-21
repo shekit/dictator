@@ -24,10 +24,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.terminate()
         }
 
-        // Check if this is first run (DO NOT create RecordingService yet to avoid permission prompts)
+        // Check if this is first run or onboarding was interrupted (DO NOT create RecordingService yet to avoid permission prompts)
         let hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
-        if !hasCompletedOnboarding {
-            // Show onboarding on next run loop after UI is ready
+        let hasOnboardingInProgress = UserDefaults.standard.object(forKey: "currentOnboardingStep") != nil
+
+        if !hasCompletedOnboarding || hasOnboardingInProgress {
+            // Show onboarding on next run loop after UI is ready (will resume from saved step if interrupted)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
                 self?.showOnboarding()
             }
