@@ -517,3 +517,31 @@ This file tracks progress across coding sessions. Append new entries at the bott
 - App is fully production-ready
 
 ---
+
+## Session: 2026-01-21 - Menu Bar UX Consolidation
+
+### Changes Made:
+1. **Consolidated menu bar UX** (StatusBarController.swift)
+   - Removed separate Cloud Model and Local Model submenus
+   - Single "Processing Mode" menu with three options: Raw, Local, Cloud
+   - Inline status messages: "Local - Ollama not connected" or "Cloud - API key missing"
+   - Fixes unintuitive two-step process where selecting model didn't change mode
+
+2. **Model selection already in Settings window**
+   - Cloud Model picker with 3 options (Llama 3.3 70B, Claude 3.5 Haiku, GPT-4o Mini)
+   - Local Model picker with Ollama models and refresh button
+   - Both pickers disabled when not in respective mode
+
+### Files Modified:
+- StatusBarController.swift: Removed 136 lines, added 22 lines
+  - Removed buildCloudModelSubmenu(), buildLocalModelSubmenu(), etc.
+  - Updated buildModeSubmenu() to show inline status
+  - Simplified menu structure
+
+### Build Status:
+✅ Build successful (1.93s)
+✅ Committed: 0bd47a2
+
+### Phase Status:
+Phase 9 (Polish) - Menu bar UX improvements complete
+

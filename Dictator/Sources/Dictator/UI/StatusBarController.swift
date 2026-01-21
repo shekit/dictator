@@ -21,10 +21,8 @@ final class StatusBarController {
     private let menu = NSMenu()
     private let quitItem: NSMenuItem
     private let settingsItem: NSMenuItem
-    private let aboutItem: NSMenuItem
     private let statusMenuItem = NSMenuItem()
     private let statsMenuItem = NSMenuItem()
-    private let llmStatusMenuItem = NSMenuItem()
     private var modeSubmenu = NSMenu()
     private let quitAction: () -> Void
 
@@ -32,7 +30,6 @@ final class StatusBarController {
     private var llmService: LLMService?
     private var cancellables = Set<AnyCancellable>()
     private var settingsWindowController: NSWindowController?
-    private var aboutWindowController: NSWindowController?
 
     private let normalIcon = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: "Dictator")
     private let recordingIcon = NSImage(systemSymbolName: "mic.circle.fill", accessibilityDescription: "Recording")
@@ -47,7 +44,6 @@ final class StatusBarController {
         self.quitAction = quitAction
         self.quitItem = NSMenuItem(title: "Quit Dictator", action: nil, keyEquivalent: "q")
         self.settingsItem = NSMenuItem(title: "Settings...", action: nil, keyEquivalent: ",")
-        self.aboutItem = NSMenuItem(title: "About Dictator", action: nil, keyEquivalent: "")
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
 
         configureButton()
@@ -151,16 +147,9 @@ final class StatusBarController {
         settingsItem.target = self
         settingsItem.action = #selector(handleSettings)
 
-        aboutItem.target = self
-        aboutItem.action = #selector(handleAbout)
-
         // Stats display item (disabled, just for info)
         updateTodayStats()
         statsMenuItem.isEnabled = false
-
-        // LLM status display (disabled, just for info)
-        llmStatusMenuItem.title = "LLM: Loading..."
-        llmStatusMenuItem.isEnabled = false
 
         // Mode selection submenu (Raw/Local/Cloud)
         let modeMenuItem = NSMenuItem(title: "Processing Mode", action: nil, keyEquivalent: "")
@@ -170,11 +159,9 @@ final class StatusBarController {
         menu.items = [
             statsMenuItem,
             NSMenuItem.separator(),
-            llmStatusMenuItem,
             modeMenuItem,
             NSMenuItem.separator(),
             settingsItem,
-            aboutItem,
             NSMenuItem.separator(),
             quitItem
         ]
@@ -212,15 +199,6 @@ final class StatusBarController {
 
 
     private func updateLLMMenuItems() {
-        guard let service = llmService else { return }
-
-        // Update status display with offline indicator
-        var statusText = "LLM: \(service.modeStatusDescription)"
-        if service.processingMode == .local && service.isOllamaAvailable {
-            statusText += " [Offline]"
-        }
-        llmStatusMenuItem.title = statusText
-
         // Rebuild mode submenu to update availability status and checkmarks
         buildModeSubmenu()
     }
@@ -301,28 +279,6 @@ final class StatusBarController {
         // Show the window
         settingsWindowController?.showWindow(nil)
         settingsWindowController?.window?.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
-    }
-
-    @objc private func handleAbout() {
-        // Create about window if it doesn't exist
-        if aboutWindowController == nil {
-            let aboutView = AboutWindow()
-            let hostingController = NSHostingController(rootView: aboutView)
-
-            let window = NSWindow(contentViewController: hostingController)
-            window.title = "About Dictator"
-            window.styleMask = [.titled, .closable]
-            window.setContentSize(NSSize(width: 400, height: 500))
-            window.center()
-
-            let windowController = NSWindowController(window: window)
-            aboutWindowController = windowController
-        }
-
-        // Show the window
-        aboutWindowController?.showWindow(nil)
-        aboutWindowController?.window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
 
