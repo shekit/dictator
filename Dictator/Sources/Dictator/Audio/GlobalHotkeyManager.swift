@@ -2,13 +2,15 @@ import AppKit
 import Carbon
 
 /// Manages global hotkey detection using CGEvent taps.
-/// Detects hold (key down) and release (key up) events for Ctrl+Option+Space.
+/// Detects hold (fn key down) and release (fn key up) events.
+/// Cancels recording if another key is pressed while fn is held (e.g., F1-F12).
 final class GlobalHotkeyManager {
     // MARK: - Types
 
     enum HotkeyEvent {
-        case keyDown
-        case keyUp
+        case keyDown      // fn pressed - start recording
+        case keyUp        // fn released - complete recording
+        case cancelled    // fn + other key - cancel recording
     }
 
     typealias HotkeyHandler = (HotkeyEvent) -> Void
@@ -19,12 +21,12 @@ final class GlobalHotkeyManager {
     nonisolated(unsafe) private var eventTap: CFMachPort?
     nonisolated(unsafe) private var runLoopSource: CFRunLoopSource?
 
-    private var isKeyPressed = false
+    private var isFnPressed = false
+    private var wasOtherKeyPressed = false
     private let handler: HotkeyHandler
 
-    /// Hotkey configuration: Ctrl + Option + Space
-    private let targetKeyCode: CGKeyCode = 49  // Space bar
-    private let requiredModifiers: CGEventFlags = [.maskControl, .maskAlternate]
+    /// fn key code
+    private let fnKeyCode: Int64 = 63  // 0x3F
 
     private var healthCheckTimer: Timer?
 
@@ -51,7 +53,7 @@ final class GlobalHotkeyManager {
 
         setupEventTap()
         startHealthCheck()
-        print("[Hotkey] Global hotkey manager started (Ctrl+Option+Space)")
+        print("[Hotkey] Global hotkey manager started (fn key - hold to record)")
     }
 
     /// Stop listening for global hotkey events.
@@ -74,7 +76,7 @@ final class GlobalHotkeyManager {
     // MARK: - Private Methods
 
     private func setupEventTap() {
-        // Listen for key down and key up events, plus flags changed for modifier tracking
+        // Listen for key events and flags changed (for fn key)
         let eventMask: CGEventMask = (1 << CGEventType.keyDown.rawValue) |
                                       (1 << CGEventType.keyUp.rawValue) |
                                       (1 << CGEventType.flagsChanged.rawValue) |
@@ -113,6 +115,8 @@ final class GlobalHotkeyManager {
 
         CFRunLoopAddSource(CFRunLoopGetCurrent(), source, .commonModes)
         CGEvent.tapEnable(tap: tap, enable: true)
+
+        print("[Hotkey] Event tap created and enabled")
     }
 
     private func handleEvent(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
@@ -128,41 +132,40 @@ final class GlobalHotkeyManager {
         let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
         let flags = event.flags
 
-        // Check if this is our target hotkey
-        guard keyCode == targetKeyCode,
-              flags.contains(requiredModifiers) else {
-            // If key was pressed and modifiers released, treat as key up
-            if isKeyPressed && !flags.contains(requiredModifiers) {
-                handleKeyUp()
+        // Handle flagsChanged - this is where we detect fn key press/release
+        if type == .flagsChanged {
+            // fn key has keycode 63
+            if keyCode == fnKeyCode {
+                // Check if fn flag is now set (key pressed) or cleared (key released)
+                let fnFlagSet = flags.contains(.maskSecondaryFn)
+
+                if fnFlagSet && !isFnPressed {
+                    // fn key just pressed
+                    handleFnDown()
+                } else if !fnFlagSet && isFnPressed {
+                    // fn key just released
+                    handleFnUp()
+                }
             }
             return Unmanaged.passUnretained(event)
         }
 
-        switch type {
-        case .keyDown:
-            if !isKeyPressed {
-                handleKeyDown()
-            }
-            // Consume the event to prevent it from being passed to other apps
-            return nil
-
-        case .keyUp:
-            if isKeyPressed {
-                handleKeyUp()
-            }
-            // Consume the event
-            return nil
-
-        default:
-            break
+        // If fn is pressed and any other key is pressed, cancel recording
+        if type == .keyDown && isFnPressed {
+            print("[Hotkey] Other key pressed while fn held (keyCode: \(keyCode)) - cancelling")
+            wasOtherKeyPressed = true
+            handleCancelled()
+            // Let the event pass through (e.g., for F1-F12 functionality)
+            return Unmanaged.passUnretained(event)
         }
 
         return Unmanaged.passUnretained(event)
     }
 
-    private func handleKeyDown() {
-        isKeyPressed = true
-        print("[Hotkey] Hotkey pressed (key down)")
+    private func handleFnDown() {
+        isFnPressed = true
+        wasOtherKeyPressed = false
+        print("[Hotkey] fn key pressed (key down) - Recording started")
 
         // Call handler on main thread
         DispatchQueue.main.async { [weak self] in
@@ -170,13 +173,27 @@ final class GlobalHotkeyManager {
         }
     }
 
-    private func handleKeyUp() {
-        isKeyPressed = false
-        print("[Hotkey] Hotkey released (key up)")
+    private func handleFnUp() {
+        let wasCancelled = wasOtherKeyPressed
+        isFnPressed = false
+        wasOtherKeyPressed = false
 
+        if wasCancelled {
+            print("[Hotkey] fn key released (was cancelled)")
+            // Already cancelled, don't send keyUp
+        } else {
+            print("[Hotkey] fn key released (key up) - Recording stopped")
+            // Call handler on main thread
+            DispatchQueue.main.async { [weak self] in
+                self?.handler(.keyUp)
+            }
+        }
+    }
+
+    private func handleCancelled() {
         // Call handler on main thread
         DispatchQueue.main.async { [weak self] in
-            self?.handler(.keyUp)
+            self?.handler(.cancelled)
         }
     }
 

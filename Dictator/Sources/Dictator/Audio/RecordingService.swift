@@ -89,7 +89,21 @@ final class RecordingService: ObservableObject {
             startRecording()
         case .keyUp:
             stopRecording()
+        case .cancelled:
+            cancelRecording()
         }
+    }
+
+    private func cancelRecording() {
+        guard case .recording = state else {
+            print("[RecordingService] Cannot cancel - not recording (current state: \(state))")
+            return
+        }
+
+        // Stop recording but discard the audio
+        _ = audioRecorder.stopRecording()
+        state = .idle
+        print("[RecordingService] Recording cancelled (fn + other key)")
     }
 
     private func startRecording() {
