@@ -265,6 +265,8 @@ struct DictionaryEntryRow: View {
 struct SettingsTabView: View {
     @ObservedObject var llmService: LLMService
     @ObservedObject var launchAtLogin = LaunchAtLoginService.shared
+    @State private var apiKey: String = ""
+    @State private var isEditingAPIKey = false
 
     var body: some View {
         ScrollView {
@@ -303,37 +305,78 @@ struct SettingsTabView: View {
 
                 Divider()
 
-                // API Key Status
+                // API Key Configuration
                 VStack(alignment: .leading, spacing: 8) {
                     Text("API Configuration")
                         .font(.headline)
 
-                    HStack {
-                        Text("OpenRouter API Key:")
-                            .font(.body)
+                    if isEditingAPIKey {
+                        VStack(alignment: .leading, spacing: 8) {
+                            SecureField("Enter your OpenRouter API key", text: $apiKey)
+                                .textFieldStyle(.roundedBorder)
 
-                        if EnvLoader.shared.hasOpenRouterKey {
-                            Text("✓ Configured")
-                                .foregroundColor(.green)
-                                .font(.body.bold())
-                        } else {
-                            Text("✗ Not configured")
-                                .foregroundColor(.red)
-                                .font(.body.bold())
+                            Text("Example: sk-or-v1-...")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+
+                            HStack {
+                                Button("Save") {
+                                    saveAPIKey()
+                                }
+                                .buttonStyle(.borderedProminent)
+
+                                Button("Cancel") {
+                                    isEditingAPIKey = false
+                                    loadAPIKey()
+                                }
+                                .buttonStyle(.bordered)
+
+                                if KeychainManager.shared.openRouterAPIKey != nil {
+                                    Button("Remove") {
+                                        removeAPIKey()
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .foregroundColor(.red)
+                                }
+                            }
                         }
-                    }
-
-                    if let envPath = EnvLoader.shared.envFileLocation {
-                        Text("Configuration file: \(envPath)")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
                     } else {
-                        Text("Add OPENROUTER_API_KEY to .env file in:")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Text("~/.env or ~/Documents/Dictator/.env")
-                            .font(.caption.monospaced())
-                            .foregroundColor(.secondary)
+                        HStack {
+                            Text("OpenRouter API Key:")
+                                .font(.body)
+
+                            if EnvLoader.shared.hasOpenRouterKey {
+                                Text("✓ Configured")
+                                    .foregroundColor(.green)
+                                    .font(.body.bold())
+                            } else {
+                                Text("✗ Not configured")
+                                    .foregroundColor(.red)
+                                    .font(.body.bold())
+                            }
+
+                            Spacer()
+
+                            Button(KeychainManager.shared.openRouterAPIKey != nil ? "Edit" : "Add") {
+                                isEditingAPIKey = true
+                                loadAPIKey()
+                            }
+                            .buttonStyle(.bordered)
+                        }
+
+                        if KeychainManager.shared.openRouterAPIKey != nil {
+                            Text("API key stored securely in Keychain")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        } else if let envPath = EnvLoader.shared.envFileLocation {
+                            Text("Using API key from: \(envPath)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        } else {
+                            Text("Add your API key to use cloud LLM processing")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
                     }
                 }
 
@@ -418,6 +461,26 @@ struct SettingsTabView: View {
             }
             .padding()
         }
+    }
+
+    private func loadAPIKey() {
+        apiKey = KeychainManager.shared.openRouterAPIKey ?? ""
+    }
+
+    private func saveAPIKey() {
+        let trimmed = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty {
+            KeychainManager.shared.openRouterAPIKey = trimmed
+            print("[Settings] API key saved to Keychain")
+        }
+        isEditingAPIKey = false
+    }
+
+    private func removeAPIKey() {
+        KeychainManager.shared.openRouterAPIKey = nil
+        apiKey = ""
+        isEditingAPIKey = false
+        print("[Settings] API key removed from Keychain")
     }
 }
 

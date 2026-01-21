@@ -4,6 +4,7 @@ import AVFoundation
 /// Onboarding window for first-time users.
 struct OnboardingWindow: View {
     @State private var currentStep = 0
+    @State private var apiKey: String = ""
     @Environment(\.dismiss) private var dismiss
     let onComplete: () -> Void
 
@@ -31,8 +32,9 @@ struct OnboardingWindow: View {
         OnboardingStep(
             icon: "key.fill",
             title: "API Key (Optional)",
-            description: "For cloud LLM processing, add your OpenRouter API key to:\n\n~/.env or ~/Documents/Dictator/.env\n\nExample:\nOPENROUTER_API_KEY=sk-or-...\n\nYou can also use local Ollama models without an API key.",
-            actionTitle: "Skip for Now"
+            description: "For cloud LLM processing, enter your OpenRouter API key below.\n\nYou can get one at openrouter.ai\n\nYou can also use local Ollama models without an API key, or add this later in Settings.",
+            actionTitle: "Continue",
+            action: .apiKeyInput
         ),
         OnboardingStep(
             icon: "checkmark.circle.fill",
@@ -63,6 +65,20 @@ struct OnboardingWindow: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 50)
                     .fixedSize(horizontal: false, vertical: true)
+
+                // API Key Input (only on API key step)
+                if steps[currentStep].action == .apiKeyInput {
+                    VStack(spacing: 8) {
+                        SecureField("Enter your OpenRouter API key (or leave blank)", text: $apiKey)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 400)
+
+                        Text("Example: sk-or-v1-...")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.top, 10)
+                }
 
                 Spacer()
             }
@@ -113,6 +129,9 @@ struct OnboardingWindow: View {
         case .requestAccessibility:
             openAccessibilitySettings()
             advance()
+        case .apiKeyInput:
+            saveAPIKey()
+            advance()
         case .none:
             advance()
         }
@@ -141,6 +160,16 @@ struct OnboardingWindow: View {
             NSWorkspace.shared.open(url)
         }
     }
+
+    private func saveAPIKey() {
+        let trimmed = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty {
+            KeychainManager.shared.openRouterAPIKey = trimmed
+            print("[Onboarding] API key saved to Keychain")
+        } else {
+            print("[Onboarding] No API key entered, skipped")
+        }
+    }
 }
 
 // MARK: - Supporting Types
@@ -160,9 +189,10 @@ struct OnboardingStep {
         self.action = action
     }
 
-    enum Action {
+    enum Action: Equatable {
         case requestMicrophone
         case requestAccessibility
+        case apiKeyInput
     }
 }
 

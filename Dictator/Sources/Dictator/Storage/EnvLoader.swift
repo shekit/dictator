@@ -79,8 +79,15 @@ final class EnvLoader {
     }
 
     /// Get OpenRouter API key.
+    /// Checks Keychain first, then falls back to .env file.
     var openRouterAPIKey: String? {
-        self.get("OPENROUTER_API_KEY")
+        // First check Keychain (user entered via UI)
+        if let keychainKey = KeychainManager.shared.openRouterAPIKey {
+            return keychainKey
+        }
+
+        // Fall back to .env file (for developers/power users)
+        return self.get("OPENROUTER_API_KEY")
     }
 
     /// Get Ollama host URL (defaults to localhost:11434).
