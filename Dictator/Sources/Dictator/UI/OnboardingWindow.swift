@@ -32,7 +32,7 @@ struct OnboardingWindow: View {
         OnboardingStep(
             icon: "key.fill",
             title: "API Key (Optional)",
-            description: "For cloud LLM processing, enter your OpenRouter API key.\n\nGet one at openrouter.ai or skip to use local Ollama models.",
+            description: "Enter your OpenRouter API key for cloud processing, or skip to use local Ollama.",
             actionTitle: "Continue",
             action: .apiKeyInput
         ),
@@ -106,6 +106,14 @@ struct OnboardingWindow: View {
                             withAnimation {
                                 currentStep -= 1
                             }
+                        }
+                        .buttonStyle(.bordered)
+                    }
+
+                    // Skip button for API key step
+                    if steps[currentStep].action == .apiKeyInput {
+                        Button("Skip") {
+                            advance()
                         }
                         .buttonStyle(.bordered)
                     }

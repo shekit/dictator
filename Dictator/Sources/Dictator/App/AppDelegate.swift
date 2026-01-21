@@ -81,24 +81,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
                 self?.showOnboarding()
             }
-        }
-
-        // CRITICAL: Delay service initialization to avoid race conditions
-        // Audio services need UI to be fully ready before initializing
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
-            self?.recordingService?.initialize()
-
-            // Start loading ASR models in background
-            // First recording will wait if not ready, but we start early for faster first use
-            Task {
-                do {
-                    print("[App] Starting ASR model preparation...")
-                    try await TranscriptionService.shared.prepareModels()
-                    print("[App] ASR models ready")
-                } catch {
-                    print("[App] Failed to prepare ASR models: \(error)")
-                    // Models will be loaded on first transcription attempt
-                }
+        } else {
+            // Only initialize if onboarding is complete
+            // CRITICAL: Delay service initialization to avoid race conditions
+            // Audio services need UI to be fully ready before initializing
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+                self?.initializeServices()
             }
         }
     }
@@ -114,6 +102,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.terminate(nil)
     }
 
+    private func initializeServices() {
+        recordingService?.initialize()
+
+        // Start loading ASR models in background
+        // First recording will wait if not ready, but we start early for faster first use
+        Task {
+            do {
+                print("[App] Starting ASR model preparation...")
+                try await TranscriptionService.shared.prepareModels()
+                print("[App] ASR models ready")
+            } catch {
+                print("[App] Failed to prepare ASR models: \(error)")
+                // Models will be loaded on first transcription attempt
+            }
+        }
+    }
+
     private func showOnboarding() {
         let onboardingView = OnboardingWindow { [weak self] in
             // Mark onboarding as complete
@@ -123,6 +128,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // Close onboarding window
             self?.onboardingWindowController?.close()
             self?.onboardingWindowController = nil
+
+            // Initialize services now that onboarding is complete
+            self?.initializeServices()
         }
 
         let hostingController = NSHostingController(rootView: onboardingView)
