@@ -71,13 +71,19 @@ final class GlobalHotkeyManager {
 
     private func startPermissionCheck() {
         // Check every 2 seconds if permission was granted
-        permissionCheckTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
-            if AXIsProcessTrusted() {
-                print("[Hotkey] Accessibility permission granted!")
-                DispatchQueue.main.async {
+        // Must run on main thread to ensure timer fires
+        DispatchQueue.main.async { [weak self] in
+            print("[Hotkey] Starting permission check timer...")
+            self?.permissionCheckTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
+                let trusted = AXIsProcessTrusted()
+                print("[Hotkey] Permission check: \(trusted ? "granted" : "not granted")")
+                if trusted {
+                    print("[Hotkey] Accessibility permission granted!")
                     self?.startEventTap()
                 }
             }
+            // Fire immediately once
+            self?.permissionCheckTimer?.fire()
         }
     }
 
@@ -251,14 +257,6 @@ final class GlobalHotkeyManager {
             NSWorkspace.shared.open(url)
         }
 
-        // Show a helpful alert with instructions
-        DispatchQueue.main.async {
-            let alert = NSAlert()
-            alert.messageText = "Accessibility Permission Required"
-            alert.informativeText = "Dictator needs Accessibility permission to detect the fn key.\n\n1. Click the + button in System Settings\n2. Navigate to this app: Dictator.app\n3. Toggle it ON\n\nThe app will start automatically once permission is granted."
-            alert.alertStyle = .informational
-            alert.addButton(withTitle: "OK")
-            alert.runModal()
-        }
+        print("[Hotkey] Please add Dictator.app to Accessibility and toggle it ON")
     }
 }
