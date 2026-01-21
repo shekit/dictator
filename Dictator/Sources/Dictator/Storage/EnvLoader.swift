@@ -16,15 +16,10 @@ final class EnvLoader {
         // Look in multiple locations:
         // 1. First, check the executable's directory (for dev builds)
         // 2. Then check home directory
-        // 3. Finally check ~/Documents/Dictator/
 
         let paths = [
             Bundle.main.bundleURL.deletingLastPathComponent().appendingPathComponent(".env"),
-            FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".env"),
-            FileManager.default.homeDirectoryForCurrentUser
-                .appendingPathComponent("Documents")
-                .appendingPathComponent("Dictator")
-                .appendingPathComponent(".env")
+            FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".env")
         ]
 
         for path in paths {
@@ -53,7 +48,6 @@ final class EnvLoader {
             print("[EnvLoader] Searched in:")
             print("  - App bundle directory")
             print("  - Home directory (~/.env)")
-            print("  - ~/Documents/Dictator/.env")
             return
         }
 
