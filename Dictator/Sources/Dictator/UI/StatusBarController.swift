@@ -175,7 +175,15 @@ final class StatusBarController {
 
         guard let service = llmService else { return }
 
-        for mode in LLMService.ProcessingMode.allCases {
+        // Add subtitle header
+        let subtitleItem = NSMenuItem(title: "LLM Post Processing", action: nil, keyEquivalent: "")
+        subtitleItem.isEnabled = false
+        modeMenuItems.append(subtitleItem)
+
+        // Iterate through modes in specific order: off, local, cloud
+        let orderedModes: [LLMService.ProcessingMode] = [.off, .local, .cloud]
+
+        for mode in orderedModes {
             var title = mode.displayName
 
             // Add status indicators for unavailable services
