@@ -244,6 +244,29 @@ final class StatusBarController {
               let modeRaw = sender.representedObject as? String,
               let mode = LLMService.ProcessingMode(rawValue: modeRaw) else { return }
 
+        // If clicking on already-selected Local mode, offer to stop Ollama server
+        if mode == .local && mode == service.processingMode && OllamaManager.shared.isServerRunning {
+            let alert = NSAlert()
+            alert.messageText = "Ollama Server Running"
+            alert.informativeText = "The Ollama server was started by Dictator. Would you like to stop it?"
+            alert.alertStyle = .informational
+            alert.addButton(withTitle: "Stop Server")
+            alert.addButton(withTitle: "Cancel")
+
+            let response = alert.runModal()
+            if response == .alertFirstButtonReturn {
+                // User clicked "Stop Server"
+                OllamaManager.shared.stopOllamaServer()
+
+                // Refresh Ollama status after stopping
+                Task {
+                    try? await Task.sleep(for: .seconds(0.5))
+                    await service.refreshOllamaStatus()
+                }
+            }
+            return
+        }
+
         // If switching to cloud mode, check for API key
         if mode == .cloud && !EnvLoader.shared.hasOpenRouterKey {
             let alert = NSAlert()
@@ -255,8 +278,8 @@ final class StatusBarController {
 
             let response = alert.runModal()
             if response == .alertFirstButtonReturn {
-                // User clicked "Open Settings"
-                handleSettings()
+                // User clicked "Open Settings" - open to Settings tab where API key is
+                openSettings(initialTab: .settings)
             }
             return
         }
@@ -320,6 +343,12 @@ final class StatusBarController {
             }
         }
 
+        // If switching away from Local mode, stop Ollama server if it was started by this app
+        if service.processingMode == .local && mode != .local && OllamaManager.shared.isServerRunning {
+            print("[StatusBarController] Switching away from Local mode - stopping Ollama server")
+            OllamaManager.shared.stopOllamaServer()
+        }
+
         service.processingMode = mode
         print("[StatusBarController] Mode changed to: \(mode.rawValue)")
     }
@@ -343,11 +372,21 @@ final class StatusBarController {
     }
 
     @objc private func handleSettings() {
+        openSettings()
+    }
+
+    private func openSettings(initialTab: SettingsWindow.SettingsTab = .prompts) {
+        guard let service = llmService else { return }
+
+        // If window exists but we need a different tab, close and recreate
+        if settingsWindowController != nil && initialTab != .prompts {
+            settingsWindowController?.close()
+            settingsWindowController = nil
+        }
+
         // Create settings window if it doesn't exist
         if settingsWindowController == nil {
-            guard let service = llmService else { return }
-
-            let settingsView = SettingsWindow(llmService: service)
+            let settingsView = SettingsWindow(llmService: service, initialTab: initialTab)
             let hostingController = NSHostingController(rootView: settingsView)
 
             let window = NSWindow(contentViewController: hostingController)

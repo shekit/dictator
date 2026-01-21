@@ -11,6 +11,11 @@ final class OllamaManager {
 
     private var ollamaProcess: Process?
 
+    /// Check if the Ollama server is running (managed by this app).
+    var isServerRunning: Bool {
+        return ollamaProcess?.isRunning == true
+    }
+
     // MARK: - Initialization
 
     private init() {}

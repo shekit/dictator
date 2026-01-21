@@ -3,7 +3,13 @@ import SwiftUI
 /// Settings window with tabbed interface for configuring Dictator.
 struct SettingsWindow: View {
     @ObservedObject var llmService: LLMService
+    let initialTab: SettingsTab
     @State private var selectedTab: SettingsTab = .prompts
+
+    init(llmService: LLMService, initialTab: SettingsTab = .prompts) {
+        self.llmService = llmService
+        self.initialTab = initialTab
+    }
 
     enum SettingsTab: String, CaseIterable {
         case prompts = "Prompts"
@@ -57,6 +63,9 @@ struct SettingsWindow: View {
             .tabViewStyle(.automatic)
         }
         .frame(width: 600, height: 500)
+        .onAppear {
+            selectedTab = initialTab
+        }
     }
 }
 
