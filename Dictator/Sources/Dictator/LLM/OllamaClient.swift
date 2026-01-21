@@ -70,7 +70,7 @@ actor OllamaClient {
 
     private static let defaultHost = "http://localhost:11434"
     private static let healthEndpoint = "/api/tags"  // List models = health check
-    private static let generateEndpoint = "/api/generate"
+    private static let chatEndpoint = "/api/chat"  // Chat API with proper message roles
 
     static let defaultModel = "llama3.2:3b"
 
@@ -131,7 +131,8 @@ actor OllamaClient {
         return try parseModelsResponse(data)
     }
 
-    /// Generate text completion using Ollama.
+    /// Generate text completion using Ollama chat API.
+    /// Uses chat endpoint for better system prompt handling.
     func generate(
         prompt: String,
         systemPrompt: String? = nil,
@@ -149,27 +150,30 @@ actor OllamaClient {
             throw OllamaError.modelNotFound(model)
         }
 
-        // Build request
-        let url = URL(string: baseURL + Self.generateEndpoint)!
+        // Build request using chat endpoint for better instruction following
+        let url = URL(string: baseURL + Self.chatEndpoint)!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.timeoutInterval = 60  // LLM can take a while
 
-        var body: [String: Any] = [
-            "model": model,
-            "prompt": prompt,
-            "stream": false
-        ]
+        // Build messages array with proper roles
+        var messages: [[String: String]] = []
 
         if let system = systemPrompt {
-            body["system"] = system
+            messages.append(["role": "system", "content": system])
         }
 
-        // Add generation options for faster response
-        body["options"] = [
-            "temperature": 0.3,
-            "num_predict": 500
+        messages.append(["role": "user", "content": prompt])
+
+        let body: [String: Any] = [
+            "model": model,
+            "messages": messages,
+            "stream": false,
+            "options": [
+                "temperature": 0.3,
+                "num_predict": 500
+            ]
         ]
 
         guard let jsonData = try? JSONSerialization.data(withJSONObject: body) else {
@@ -199,7 +203,7 @@ actor OllamaClient {
             throw OllamaError.httpError(statusCode: httpResponse.statusCode, message: errorMessage)
         }
 
-        return try parseGenerateResponse(data)
+        return try parseChatResponse(data)
     }
 
     // MARK: - Private Methods
@@ -225,12 +229,14 @@ actor OllamaClient {
         }
     }
 
-    private func parseGenerateResponse(_ data: Data) throws -> GenerateResponse {
+    private func parseChatResponse(_ data: Data) throws -> GenerateResponse {
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             throw OllamaError.decodingError(NSError(domain: "Ollama", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid JSON"]))
         }
 
-        guard let response = json["response"] as? String else {
+        // Chat API returns message object with content
+        guard let message = json["message"] as? [String: Any],
+              let content = message["content"] as? String else {
             throw OllamaError.emptyResponse
         }
 
@@ -238,7 +244,7 @@ actor OllamaClient {
         let totalDuration = json["total_duration"] as? Int64
 
         return GenerateResponse(
-            response: response.trimmingCharacters(in: .whitespacesAndNewlines),
+            response: content.trimmingCharacters(in: .whitespacesAndNewlines),
             model: model,
             totalDuration: totalDuration
         )

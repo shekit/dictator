@@ -276,10 +276,13 @@ final class LLMService: ObservableObject {
     private func processWithOllama(_ rawText: String) async throws -> String {
         let systemPrompt = buildSystemPrompt()
 
+        // Add explicit task prefix to help smaller models understand the task
+        let formattedPrompt = "Clean this text: \(rawText)"
+
         print("[LLMService] Sending to Ollama (model: \(selectedLocalModel))")
 
         let response = try await ollamaClient.generate(
-            prompt: rawText,
+            prompt: formattedPrompt,
             systemPrompt: systemPrompt,
             model: selectedLocalModel
         )
