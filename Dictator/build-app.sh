@@ -1,5 +1,6 @@
 #!/bin/bash
 # Build and package Dictator as a macOS .app bundle
+# Also resets onboarding state before building
 
 set -e
 
@@ -7,6 +8,10 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BUILD_DIR="$SCRIPT_DIR/.build/release"
 APP_NAME="Dictator"
 APP_BUNDLE="$SCRIPT_DIR/$APP_NAME.app"
+
+# Reset onboarding state first
+"$SCRIPT_DIR/reset-onboarding.sh"
+echo ""
 
 echo "Building $APP_NAME..."
 cd "$SCRIPT_DIR"
