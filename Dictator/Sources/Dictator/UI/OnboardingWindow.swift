@@ -5,6 +5,8 @@ import AVFoundation
 struct OnboardingWindow: View {
     @State private var currentStep: Int
     @State private var apiKey: String = ""
+    @State private var showPermissionError = false
+    @State private var permissionErrorMessage = ""
     @Environment(\.dismiss) private var dismiss
     let onComplete: () -> Void
 
@@ -75,6 +77,16 @@ struct OnboardingWindow: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
+                // Permission error message
+                if showPermissionError {
+                    Text(permissionErrorMessage)
+                        .font(.body)
+                        .foregroundColor(.red)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 50)
+                        .padding(.top, 10)
+                }
+
                 // API Key Input (only on API key step)
                 if steps[currentStep].action == .apiKeyInput {
                     VStack(spacing: 8) {
@@ -127,10 +139,23 @@ struct OnboardingWindow: View {
                         .buttonStyle(.bordered)
                     }
 
-                    Button(steps[currentStep].actionTitle) {
-                        handleAction()
+                    // For permission steps, show both "Open Settings" and "Continue" buttons
+                    if steps[currentStep].action == .requestAccessibility || steps[currentStep].action == .requestMicrophone {
+                        Button("Open Settings") {
+                            openPermissionSettings()
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button("Continue") {
+                            validatePermissionAndAdvance()
+                        }
+                        .buttonStyle(.borderedProminent)
+                    } else {
+                        Button(steps[currentStep].actionTitle) {
+                            handleAction()
+                        }
+                        .buttonStyle(.borderedProminent)
                     }
-                    .buttonStyle(.borderedProminent)
                 }
                 .padding()
             }
@@ -140,16 +165,57 @@ struct OnboardingWindow: View {
 
     private func handleAction() {
         switch steps[currentStep].action {
-        case .requestMicrophone:
-            requestMicrophonePermission()
-            advance()
-        case .requestAccessibility:
-            openAccessibilitySettings()
-            advance()
         case .apiKeyInput:
             saveAPIKey()
             advance()
         case .none:
+            advance()
+        default:
+            break
+        }
+    }
+
+    private func openPermissionSettings() {
+        // Clear any previous error
+        showPermissionError = false
+
+        switch steps[currentStep].action {
+        case .requestAccessibility:
+            openAccessibilitySettings()
+        case .requestMicrophone:
+            requestMicrophonePermission()
+        default:
+            break
+        }
+    }
+
+    private func validatePermissionAndAdvance() {
+        // Clear any previous error
+        showPermissionError = false
+
+        switch steps[currentStep].action {
+        case .requestAccessibility:
+            if AXIsProcessTrusted() {
+                print("[Onboarding] Accessibility permission granted")
+                advance()
+            } else {
+                showPermissionError = true
+                permissionErrorMessage = "Please enable Accessibility permission in System Settings before continuing."
+                print("[Onboarding] Accessibility permission not granted")
+            }
+
+        case .requestMicrophone:
+            let status = AVCaptureDevice.authorizationStatus(for: .audio)
+            if status == .authorized {
+                print("[Onboarding] Microphone permission granted")
+                advance()
+            } else {
+                showPermissionError = true
+                permissionErrorMessage = "Please enable Microphone permission in System Settings before continuing."
+                print("[Onboarding] Microphone permission not granted: \(status.rawValue)")
+            }
+
+        default:
             advance()
         }
     }
