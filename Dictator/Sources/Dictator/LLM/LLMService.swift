@@ -46,7 +46,7 @@ final class LLMService: ObservableObject {
         didSet { saveSettings() }
     }
 
-    @Published var selectedLocalModel: String = OllamaClient.defaultModel {
+    @Published var selectedLocalModel: String = "" {
         didSet { saveSettings() }
     }
 
@@ -132,6 +132,15 @@ final class LLMService: ObservableObject {
                 await MainActor.run {
                     self.availableLocalModels = models
                     print("[LLMService] Found \(models.count) Ollama models: \(models.map { $0.name }.joined(separator: ", "))")
+
+                    // Auto-select first model if none selected or selected model doesn't exist
+                    if !models.isEmpty {
+                        let selectedModelExists = models.contains { $0.name == self.selectedLocalModel }
+                        if !selectedModelExists {
+                            self.selectedLocalModel = models[0].name
+                            print("[LLMService] Auto-selected model: \(self.selectedLocalModel)")
+                        }
+                    }
                 }
             } catch {
                 print("[LLMService] Failed to list Ollama models: \(error.localizedDescription)")
