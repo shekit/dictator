@@ -72,3 +72,36 @@
 
 **Commit**: cba6622 - Fix menu bar dropdown not showing
 
+
+## 2026-01-21 - Fix onboarding UX issues
+
+**User Report**: 
+1. "if i quit the onboarding midway, then i dont see the continue setup button in the menu dropdown and there is no way to retrigger it"
+2. "if the onboarding is quit before its completed, quit the app also. right now the icon stays in the menu bar, it shouldnt"
+
+**Root Causes**:
+
+1. **Missing "Complete Setup..." menu item**:
+   - `updateLLMMenuItems()` was rebuilding menu from scratch without checking `isOnboardingComplete`
+   - When user dismissed onboarding, services initialized anyway
+   - Service initialization triggered observers that called `updateLLMMenuItems()`
+   - This overwrote the correct menu (which had "Complete Setup...") with incomplete menu
+   - User was stuck with no way to re-open onboarding
+
+2. **App not quitting when onboarding dismissed**:
+   - `windowWillClose` was calling `initializeServices()` even when onboarding incomplete
+   - App stayed running with menu bar icon visible
+   - User expected app to quit entirely
+
+**Solutions**:
+
+1. Changed `updateLLMMenuItems()` to call `updateMenuForOnboardingStatus()` instead of building menu directly
+   - This ensures onboarding status is always checked when rebuilding menu
+   - "Complete Setup..." menu item now persists correctly
+
+2. Changed `windowWillClose` to call `NSApp.terminate(nil)` when onboarding incomplete
+   - App now quits cleanly with no menu bar icon remaining
+   - Next launch will show onboarding again
+
+**Commit**: 2c0300e - Fix onboarding UX: preserve Complete Setup menu item and quit on dismissal
+

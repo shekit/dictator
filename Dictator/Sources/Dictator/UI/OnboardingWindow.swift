@@ -162,14 +162,6 @@ struct OnboardingWindow: View {
                         .buttonStyle(.bordered)
                     }
 
-                    // Skip button for API key step
-                    if steps[currentStep].action == .apiKeyInput {
-                        Button("Skip") {
-                            advance()
-                        }
-                        .buttonStyle(.bordered)
-                    }
-
                     // For permission steps, show single "Grant Permission" button
                     if steps[currentStep].action == .requestAccessibility || steps[currentStep].action == .requestMicrophone {
                         Button("Grant Permission") {
