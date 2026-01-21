@@ -213,7 +213,7 @@
             "macOS prompts for Accessibility permission",
             "Permission can be granted in System Settings"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "4.2",
@@ -223,7 +223,7 @@
             "Trigger text injection",
             "Original clipboard is preserved (verified in step 4.5)"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "4.3",
@@ -233,7 +233,7 @@
             "Clipboard contains transcription text",
             "Can manually Cmd+V to paste it"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "4.4",
@@ -243,7 +243,7 @@
             "Complete transcription",
             "Text appears at cursor without manual paste"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "4.5",
@@ -254,7 +254,7 @@
             "Wait 1 second",
             "Cmd+V pastes 'ORIGINAL', not transcription"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "4.6",
@@ -265,7 +265,7 @@
             "Hold hotkey, say 'this is a test', release",
             "Text 'this is a test' appears in Notes"
           ],
-          "passes": false
+          "passes": true
         }
       ]
     },

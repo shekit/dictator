@@ -134,3 +134,41 @@ This file tracks progress across coding sessions. Append new entries at the bott
 
 ---
 
+## Session 4 - 2026-01-20 (Phase 4 Complete)
+- Implemented all Phase 4 features (4.1 - 4.6)
+- Created TextInjectionService for clipboard-based text injection
+- Full end-to-end flow now works: hold fn → speak → release → transcribe → inject text at cursor
+
+### Files Created
+- Dictator/Sources/Dictator/Injection/TextInjectionService.swift
+
+### Files Modified
+- Dictator/Sources/Dictator/Audio/RecordingService.swift (added injecting state, text injection call)
+- Dictator/Sources/Dictator/UI/StatusBarController.swift (added injecting state UI)
+
+### Implementation Details
+- TextInjectionService uses singleton pattern (shared instance)
+- Clipboard operations:
+  1. saveClipboard() - stores all NSPasteboardItem data
+  2. writeToClipboard() - writes transcription text
+  3. restoreClipboard() - restores original clipboard contents
+- Keystroke simulation uses CGEvent for Cmd+V
+- Timing: 50ms delay before paste, 100ms delay before restore
+- Accessibility permission check with helpful prompt and settings link
+- Menu bar icon shows "text.cursor" SF Symbol during injection
+- RecordingService.State now includes .injecting state
+
+### Verification
+- `swift build` succeeds without errors
+- App bundle created at Dictator/Dictator.app
+- Accessibility permission requested when needed
+- Clipboard contents preserved and restored after injection
+- Text appears at cursor position after speaking
+- Full workflow: fn (hold) → speak → fn (release) → transcription → injection
+
+### Current State
+- Phase 4 complete (6/6 features passing)
+- Next: Phase 5, Feature 5.1 (OpenRouter API client)
+
+---
+

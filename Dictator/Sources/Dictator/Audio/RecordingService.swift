@@ -12,6 +12,7 @@ final class RecordingService: ObservableObject {
         case recording
         case transcribing
         case processing
+        case injecting
         case error(String)
     }
 
@@ -27,9 +28,10 @@ final class RecordingService: ObservableObject {
     private var hotkeyManager: GlobalHotkeyManager?
     private let audioRecorder: AudioRecorder
     private let transcriptionService = TranscriptionService.shared
+    private let textInjectionService = TextInjectionService.shared
     private var isInitialized = false
 
-    /// Callback when transcription completes
+    /// Callback when transcription completes (called after text injection)
     var onTranscriptionComplete: ((String, TimeInterval) -> Void)?
 
     // MARK: - Initialization
@@ -169,12 +171,27 @@ final class RecordingService: ObservableObject {
                 let text = try await transcriptionService.transcribe(samples)
                 lastTranscription = text
 
-                state = .processing
+                print("[RecordingService] Transcription complete: '\(text)'")
+
+                // Skip injection if text is empty
+                guard !text.isEmpty else {
+                    print("[RecordingService] Empty transcription, skipping injection")
+                    state = .idle
+                    return
+                }
+
+                // Inject text at cursor position
+                state = .injecting
+                let injected = await textInjectionService.injectText(text)
+
+                if injected {
+                    print("[RecordingService] Text injected successfully")
+                } else {
+                    print("[RecordingService] Text injection failed")
+                }
 
                 // Notify callback
                 onTranscriptionComplete?(text, duration)
-
-                print("[RecordingService] Transcription complete: '\(text)'")
 
                 // Return to idle
                 state = .idle

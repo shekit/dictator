@@ -10,6 +10,7 @@ final class StatusBarController {
         case recording
         case transcribing
         case processing
+        case injecting
         case error
     }
 
@@ -28,6 +29,7 @@ final class StatusBarController {
     private let recordingIcon = NSImage(systemSymbolName: "mic.circle.fill", accessibilityDescription: "Recording")
     private let transcribingIcon = NSImage(systemSymbolName: "waveform.circle.fill", accessibilityDescription: "Transcribing")
     private let processingIcon = NSImage(systemSymbolName: "ellipsis.circle.fill", accessibilityDescription: "Processing")
+    private let injectingIcon = NSImage(systemSymbolName: "text.cursor", accessibilityDescription: "Injecting")
     private let errorIcon = NSImage(systemSymbolName: "mic.slash.fill", accessibilityDescription: "Error")
 
     // MARK: - Initialization
@@ -73,6 +75,9 @@ final class StatusBarController {
             button.appearsDisabled = false
         case .processing:
             icon = processingIcon
+            button.appearsDisabled = false
+        case .injecting:
+            icon = injectingIcon
             button.appearsDisabled = false
         case .error:
             icon = errorIcon
@@ -124,6 +129,9 @@ final class StatusBarController {
         case .processing:
             setIconState(.processing)
             statusMenuItem.title = "Status: Processing..."
+        case .injecting:
+            setIconState(.injecting)
+            statusMenuItem.title = "Status: Injecting text..."
         case .error(let message):
             setIconState(.error)
             statusMenuItem.title = "Error: \(message)"
