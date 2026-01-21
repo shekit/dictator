@@ -105,8 +105,8 @@ struct OnboardingWindow: View {
                 // Waiting for permission message
                 if isWaitingForPermission {
                     Text("You must grant permission to proceed")
-                        .font(.body)
-                        .foregroundColor(.secondary)
+                        .font(.body.weight(.medium))
+                        .foregroundColor(.orange)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 50)
                         .padding(.top, 10)
