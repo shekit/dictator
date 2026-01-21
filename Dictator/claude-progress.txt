@@ -215,3 +215,42 @@ User chose Option C (Smart Helper) with explicit requirement: "just one thing to
 
 **Commit**: 0efa4e9 - Add smart helper to open Settings when API key missing
 
+
+## 2026-01-21 - Improve Settings navigation and Ollama server management
+
+**User Feedback**:
+1. "It opens settings, but it doesn't open the settings tab within settings where the API key needs to be entered. It should open the tab where the API key needs to be entered"
+2. "If the OlaMA server was started through this menu bar, then you should have a 'Stop Server' button somewhere inside the settings menu. If I click on Olama again in the menu dropdown itself, when it's already selected and active, then maybe it can show a pop-up saying 'stop server' or 'cancel.'"
+3. "Also, make sure that if I switch from Olama to RAW or Cloud, it automatically switches off the server. So that the next time if I click it again, it asks me to restart the server."
+
+**Implementation**: Enhanced Settings navigation and added Ollama server lifecycle management.
+
+**Changes**:
+
+1. **Settings tab navigation**:
+   - Modified SettingsWindow to accept `initialTab` parameter
+   - Added `openSettings(initialTab:)` method to StatusBarController
+   - API key dialog now opens Settings directly to the Settings tab where API key input is located
+   - If Settings window already open with wrong tab, closes and reopens with correct tab
+
+2. **Ollama server stop functionality**:
+   - Added `isServerRunning` computed property to OllamaManager
+   - When clicking Local mode while already selected and server is running:
+     - Shows dialog: "Ollama Server Running - Would you like to stop it?"
+     - User can choose "Stop Server" or "Cancel"
+     - After stopping, refreshes Ollama status
+   - Automatic server cleanup when switching modes:
+     - When switching from Local to Off or Cloud, automatically stops Ollama server
+     - Ensures clean state for next time user selects Local mode
+     - Prints log message when auto-stopping
+
+3. **UX improvements**:
+   - Seamless workflow: missing API key → click Open Settings → API key input visible immediately
+   - Easy server management: click Local when active → stop server option
+   - Resource efficiency: server automatically stops when not needed
+   - Clean state: switching modes doesn't leave servers running unnecessarily
+
+**Result**: Complete lifecycle management for both settings navigation and Ollama server control, with automatic cleanup and intuitive user interactions.
+
+**Commit**: a4d1a17 - Improve Settings navigation and Ollama server management
+
