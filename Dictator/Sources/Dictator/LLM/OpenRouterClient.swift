@@ -163,7 +163,7 @@ actor OpenRouterClient {
         request.setValue("Dictator macOS App", forHTTPHeaderField: "HTTP-Referer")
         request.setValue("Dictator", forHTTPHeaderField: "X-Title")
         request.httpBody = jsonData
-        request.timeoutInterval = 30
+        request.timeoutInterval = 45
 
         // Make request
         let data: Data

@@ -171,6 +171,23 @@ final class RecordingService: ObservableObject {
         state = .transcribing
 
         Task {
+            // Safety timeout: if processing takes more than 90 seconds, force reset to idle
+            let timeoutTask = Task {
+                try? await Task.sleep(for: .seconds(90))
+                if case .idle = self.state {
+                    // Already completed successfully
+                    return
+                }
+                print("[RecordingService] ⚠️ Safety timeout triggered - forcing reset to idle")
+                await MainActor.run {
+                    self.state = .idle
+                    self.notificationService.showError(
+                        title: "Processing Timeout",
+                        message: "The request took too long and was cancelled. Try again or switch to a different mode."
+                    )
+                }
+            }
+
             do {
                 // Ensure models are loaded
                 if !transcriptionService.isModelLoaded {
@@ -187,6 +204,7 @@ final class RecordingService: ObservableObject {
                 // Skip injection if text is empty
                 guard !rawText.isEmpty else {
                     print("[RecordingService] Empty transcription, skipping injection")
+                    timeoutTask.cancel()
                     state = .idle
                     return
                 }
@@ -215,10 +233,12 @@ final class RecordingService: ObservableObject {
                 // Notify callback
                 onTranscriptionComplete?(rawText, processedText, duration, wasProcessed)
 
-                // Return to idle
+                // Cancel timeout and return to idle
+                timeoutTask.cancel()
                 state = .idle
 
             } catch {
+                timeoutTask.cancel()
                 let errorMsg = "Transcription failed: \(error.localizedDescription)"
                 state = .error(errorMsg)
                 notificationService.showError(title: "Transcription Failed", message: error.localizedDescription)
