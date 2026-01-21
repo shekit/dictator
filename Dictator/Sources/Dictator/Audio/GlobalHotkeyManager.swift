@@ -29,6 +29,8 @@ final class GlobalHotkeyManager {
     private let fnKeyCode: Int64 = 63  // 0x3F
 
     private var healthCheckTimer: Timer?
+    private var permissionCheckTimer: Timer?
+    private var hasStarted = false
 
     // MARK: - Initialization
 
@@ -48,18 +50,44 @@ final class GlobalHotkeyManager {
         guard AXIsProcessTrusted() else {
             print("[Hotkey] Accessibility permission not granted. Please enable in System Settings.")
             promptForAccessibility()
+            startPermissionCheck()
             return
         }
+
+        startEventTap()
+    }
+
+    private func startEventTap() {
+        guard !hasStarted else { return }
+        hasStarted = true
+
+        permissionCheckTimer?.invalidate()
+        permissionCheckTimer = nil
 
         setupEventTap()
         startHealthCheck()
         print("[Hotkey] Global hotkey manager started (fn key - hold to record)")
     }
 
+    private func startPermissionCheck() {
+        // Check every 2 seconds if permission was granted
+        permissionCheckTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
+            if AXIsProcessTrusted() {
+                print("[Hotkey] Accessibility permission granted!")
+                DispatchQueue.main.async {
+                    self?.startEventTap()
+                }
+            }
+        }
+    }
+
     /// Stop listening for global hotkey events.
     func stop() {
         healthCheckTimer?.invalidate()
         healthCheckTimer = nil
+
+        permissionCheckTimer?.invalidate()
+        permissionCheckTimer = nil
 
         if let tap = eventTap {
             CGEvent.tapEnable(tap: tap, enable: false)
@@ -214,7 +242,23 @@ final class GlobalHotkeyManager {
     }
 
     private func promptForAccessibility() {
+        // Try the system prompt first (only works once per app)
         let options: NSDictionary = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
         AXIsProcessTrustedWithOptions(options)
+
+        // Open the correct Privacy & Security > Accessibility pane
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+            NSWorkspace.shared.open(url)
+        }
+
+        // Show a helpful alert with instructions
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.messageText = "Accessibility Permission Required"
+            alert.informativeText = "Dictator needs Accessibility permission to detect the fn key.\n\n1. Click the + button in System Settings\n2. Navigate to this app: Dictator.app\n3. Toggle it ON\n\nThe app will start automatically once permission is granted."
+            alert.alertStyle = .informational
+            alert.addButton(withTitle: "OK")
+            alert.runModal()
+        }
     }
 }
