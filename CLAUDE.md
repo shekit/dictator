@@ -13,6 +13,17 @@ Dictator is a macOS menu bar app for voice-to-text dictation with LLM-powered te
 - **LLM Cloud:** OpenRouter API (Groq, Claude, etc.)
 - **UI:** SwiftUI + AppKit (menu bar + settings window)
 
+## Execution Modes
+
+The user can specify how many features to implement:
+
+| User says | Behavior |
+|-----------|----------|
+| "implement next feature" | Single feature, then stop |
+| "implement phase N" | All features in phase N, then stop |
+| "implement until stopped" | Keep going until user interrupts |
+| (no flag specified) | Default: single feature |
+
 ## Session Protocol
 
 Every coding session, follow this sequence:
@@ -25,6 +36,7 @@ Every coding session, follow this sequence:
 6. **Commit:** Make a descriptive git commit
 7. **Update:** Mark feature as `"passes": true` in `features.json`
 8. **Log:** Append progress to `claude-progress.txt`
+9. **Continue or Stop:** Based on execution mode, either continue to next feature or stop
 
 ## Rules
 
