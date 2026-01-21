@@ -1,0 +1,28 @@
+
+## 2026-01-21 - Hybrid Onboarding UX Implementation
+
+**Problem**: User reported that closing onboarding without completing left no way to re-access it until app restart.
+
+**User Request**: "if i launch the dictator app for the first time and then before setting it up, close the onboarding, then there is no way for me to set it up again. the onboarding doesnt trigger the next i double click it until i quit the app from the menu bar"
+
+**Solution Chosen**: Option 3 (Hybrid Approach)
+1. Auto-show onboarding on launch if incomplete (up to 3 times)
+2. Add "Complete Setup..." menu item for manual access  
+3. After 3 dismissals, stop auto-showing but keep menu item available
+
+**Implementation**:
+- Added onboardingDismissalCount tracking in UserDefaults
+- Modified AppDelegate launch logic to check dismissal count
+- Auto-show onboarding only if dismissalCount < 3 OR has in-progress step
+- Made showOnboarding() public for menu access
+- Added NSWindowDelegate to track window closures
+- Increments dismissalCount when window closed without completion
+- Initializes services even if onboarding incomplete (so app remains usable)
+- Added "Complete Setup..." menu item to StatusBarController
+- Menu item only appears when onboarding is not complete
+- Added setOnboardingComplete() to update menu visibility
+
+**Testing**: Build successful. Ready for user testing.
+
+**Commit**: 8b8e921 - Implement hybrid onboarding UX with dismissal tracking
+

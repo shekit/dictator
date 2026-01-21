@@ -25,22 +25,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Check if this is first run or onboarding was interrupted (DO NOT create RecordingService yet to avoid permission prompts)
         let hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
-        let hasOnboardingInProgress = UserDefaults.standard.object(forKey: "currentOnboardingStep") != nil
-        let dismissalCount = UserDefaults.standard.integer(forKey: "onboardingDismissalCount")
 
         if !hasCompletedOnboarding {
-            // Show onboarding on next run loop after UI is ready if:
-            // 1. Not completed AND
-            // 2. Dismissed fewer than 3 times OR has in-progress step
-            if dismissalCount < 3 || hasOnboardingInProgress {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-                    self?.showOnboarding()
-                }
-            } else {
-                // Initialize services even though onboarding not complete (user can access via menu)
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
-                    self?.initializeServices()
-                }
+            // Show onboarding on next run loop after UI is ready
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                self?.showOnboarding()
             }
         } else {
             // Only initialize if onboarding is complete
@@ -146,7 +135,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let onboardingView = OnboardingWindow { [weak self] in
             // Mark onboarding as complete
             UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
-            UserDefaults.standard.set(0, forKey: "onboardingDismissalCount") // Reset dismissal count
             print("[App] Onboarding completed")
 
             // Close onboarding window
@@ -195,10 +183,8 @@ extension AppDelegate: NSWindowDelegate {
         let hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
 
         if !hasCompletedOnboarding {
-            // User closed window without completing - increment dismissal count
-            let currentCount = UserDefaults.standard.integer(forKey: "onboardingDismissalCount")
-            UserDefaults.standard.set(currentCount + 1, forKey: "onboardingDismissalCount")
-            print("[App] Onboarding dismissed (count: \(currentCount + 1))")
+            // User closed window without completing
+            print("[App] Onboarding dismissed")
 
             // Initialize services if needed (so app is still usable)
             if recordingService == nil {
