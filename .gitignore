@@ -70,6 +70,13 @@ Packages/
 *.app/
 
 # ===================
+# Distribution Files
+# ===================
+dist/
+*.dmg
+*.zip
+
+# ===================
 # App Data (local testing)
 # ===================
 *.log
