@@ -20,9 +20,13 @@ final class StatusBarController {
     private let menu = NSMenu()
     private let quitItem: NSMenuItem
     private let statusMenuItem = NSMenuItem()
+    private let llmStatusMenuItem = NSMenuItem()
+    private let llmToggleMenuItem = NSMenuItem()
+    private var modelSubmenu = NSMenu()
     private let quitAction: () -> Void
 
     private var recordingService: RecordingService?
+    private var llmService: LLMService?
     private var cancellables = Set<AnyCancellable>()
 
     private let normalIcon = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: "Dictator")
@@ -56,6 +60,30 @@ final class StatusBarController {
                 self?.handleStateChange(state)
             }
             .store(in: &cancellables)
+    }
+
+    /// Set the LLM service for settings observation.
+    func setLLMService(_ service: LLMService) {
+        self.llmService = service
+
+        // Observe processing mode changes
+        service.$processingMode
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] mode in
+                self?.updateLLMMenuItems()
+            }
+            .store(in: &cancellables)
+
+        // Observe model changes
+        service.$selectedCloudModel
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.updateLLMMenuItems()
+            }
+            .store(in: &cancellables)
+
+        // Initial update
+        updateLLMMenuItems()
     }
 
     /// Update the menu bar icon state.
@@ -105,14 +133,96 @@ final class StatusBarController {
         statusMenuItem.title = "Status: Ready"
         statusMenuItem.isEnabled = false
 
-        let separatorItem = NSMenuItem.separator()
+        // LLM status display (disabled, just for info)
+        llmStatusMenuItem.title = "LLM: Loading..."
+        llmStatusMenuItem.isEnabled = false
+
+        // LLM processing toggle
+        llmToggleMenuItem.title = "Enable LLM Processing"
+        llmToggleMenuItem.target = self
+        llmToggleMenuItem.action = #selector(handleLLMToggle)
+        llmToggleMenuItem.state = .on
+
+        // Model selection submenu
+        let modelMenuItem = NSMenuItem(title: "Cloud Model", action: nil, keyEquivalent: "")
+        buildModelSubmenu()
+        modelMenuItem.submenu = modelSubmenu
 
         menu.items = [
             statusMenuItem,
-            separatorItem,
+            NSMenuItem.separator(),
+            llmStatusMenuItem,
+            llmToggleMenuItem,
+            modelMenuItem,
+            NSMenuItem.separator(),
             quitItem
         ]
         statusItem.menu = menu
+    }
+
+    private func buildModelSubmenu() {
+        modelSubmenu.removeAllItems()
+
+        for model in OpenRouterClient.availableModels {
+            let item = NSMenuItem(title: model.name, action: #selector(handleModelSelection(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = model.id
+            modelSubmenu.addItem(item)
+        }
+    }
+
+    private func updateLLMMenuItems() {
+        guard let service = llmService else { return }
+
+        // Update status display
+        llmStatusMenuItem.title = "LLM: \(service.modeStatusDescription)"
+
+        // Update toggle state
+        llmToggleMenuItem.state = service.processingMode != .off ? .on : .off
+        llmToggleMenuItem.title = service.processingMode != .off ? "Disable LLM Processing" : "Enable LLM Processing"
+
+        // Update model checkmarks
+        for item in modelSubmenu.items {
+            if let modelId = item.representedObject as? String {
+                item.state = modelId == service.selectedCloudModel ? .on : .off
+            }
+        }
+
+        // Disable model selection if LLM is off or in local mode
+        let enableModelSelection = service.processingMode == .cloud
+        for item in modelSubmenu.items {
+            item.isEnabled = enableModelSelection
+        }
+    }
+
+    @objc private func handleLLMToggle() {
+        guard let service = llmService else { return }
+
+        if service.processingMode == .off {
+            // Turn on - check if we have API key
+            if EnvLoader.shared.hasOpenRouterKey {
+                service.processingMode = .cloud
+            } else {
+                // Show alert about missing API key
+                let alert = NSAlert()
+                alert.messageText = "OpenRouter API Key Required"
+                alert.informativeText = "To enable LLM processing, add OPENROUTER_API_KEY to your .env file.\n\nExpected location: \(EnvLoader.shared.envFileLocation ?? "~/.env or ~/Documents/Dictator/.env")"
+                alert.alertStyle = .warning
+                alert.addButton(withTitle: "OK")
+                alert.runModal()
+            }
+        } else {
+            // Turn off
+            service.processingMode = .off
+        }
+    }
+
+    @objc private func handleModelSelection(_ sender: NSMenuItem) {
+        guard let service = llmService,
+              let modelId = sender.representedObject as? String else { return }
+
+        service.selectedCloudModel = modelId
+        print("[StatusBarController] Model changed to: \(modelId)")
     }
 
     private func handleStateChange(_ state: RecordingService.State) {

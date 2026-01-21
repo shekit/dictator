@@ -22,6 +22,7 @@ final class RecordingService: ObservableObject {
     @Published private(set) var lastRecordingDuration: TimeInterval = 0
     @Published private(set) var lastBufferSize: Int = 0
     @Published private(set) var lastTranscription: String = ""
+    @Published private(set) var lastProcessedText: String = ""
 
     // MARK: - Properties
 
@@ -29,10 +30,12 @@ final class RecordingService: ObservableObject {
     private let audioRecorder: AudioRecorder
     private let transcriptionService = TranscriptionService.shared
     private let textInjectionService = TextInjectionService.shared
+    private let llmService = LLMService.shared
     private var isInitialized = false
 
     /// Callback when transcription completes (called after text injection)
-    var onTranscriptionComplete: ((String, TimeInterval) -> Void)?
+    /// Parameters: (raw text, processed text, duration, was LLM processed)
+    var onTranscriptionComplete: ((String, String, TimeInterval, Bool) -> Void)?
 
     // MARK: - Initialization
 
@@ -168,21 +171,32 @@ final class RecordingService: ObservableObject {
                 }
 
                 // Transcribe
-                let text = try await transcriptionService.transcribe(samples)
-                lastTranscription = text
+                let rawText = try await transcriptionService.transcribe(samples)
+                lastTranscription = rawText
 
-                print("[RecordingService] Transcription complete: '\(text)'")
+                print("[RecordingService] Transcription complete: '\(rawText)'")
 
                 // Skip injection if text is empty
-                guard !text.isEmpty else {
+                guard !rawText.isEmpty else {
                     print("[RecordingService] Empty transcription, skipping injection")
                     state = .idle
                     return
                 }
 
+                // LLM Processing (if enabled)
+                state = .processing
+                let (processedText, wasProcessed) = await llmService.processTranscription(rawText)
+                lastProcessedText = processedText
+
+                if wasProcessed {
+                    print("[RecordingService] LLM processed: '\(processedText)'")
+                } else {
+                    print("[RecordingService] Using raw transcription (LLM disabled or failed)")
+                }
+
                 // Inject text at cursor position
                 state = .injecting
-                let injected = await textInjectionService.injectText(text)
+                let injected = await textInjectionService.injectText(processedText)
 
                 if injected {
                     print("[RecordingService] Text injected successfully")
@@ -191,7 +205,7 @@ final class RecordingService: ObservableObject {
                 }
 
                 // Notify callback
-                onTranscriptionComplete?(text, duration)
+                onTranscriptionComplete?(rawText, processedText, duration, wasProcessed)
 
                 // Return to idle
                 state = .idle

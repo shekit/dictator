@@ -7,6 +7,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var recordingService: RecordingService?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Load environment variables first
+        EnvLoader.shared.load()
+
+        // Log API key status
+        if EnvLoader.shared.hasOpenRouterKey {
+            print("[App] OpenRouter API key loaded")
+        } else {
+            print("[App] No OpenRouter API key configured")
+            print("[App] Create a .env file with OPENROUTER_API_KEY=sk-or-...")
+        }
+
         // Create status bar controller
         statusBarController = StatusBarController { [weak self] in
             self?.terminate()
@@ -18,11 +29,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Connect status bar to recording service for state updates
         if let service = recordingService {
             statusBarController?.setRecordingService(service)
+            statusBarController?.setLLMService(LLMService.shared)
 
             // Set up callback for when transcription completes
-            service.onTranscriptionComplete = { text, duration in
-                print("[App] Transcription complete - '\(text)' (\(String(format: "%.2f", duration))s)")
-                // Future phases will handle text injection here
+            service.onTranscriptionComplete = { rawText, processedText, duration, wasProcessed in
+                let status = wasProcessed ? "LLM cleaned" : "raw"
+                print("[App] Transcription complete (\(status)) - '\(processedText)' (\(String(format: "%.2f", duration))s)")
             }
         }
 

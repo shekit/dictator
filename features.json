@@ -283,7 +283,7 @@
             "Can make request to OpenRouter",
             "Receives valid response"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "5.2",
@@ -293,7 +293,7 @@
             "App reads .env on startup",
             "API key is available for requests"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "5.3",
@@ -303,7 +303,7 @@
             "Output is 'Hello, how are you?'",
             "Fillers removed, punctuation added"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "5.4",
@@ -314,7 +314,7 @@
             "Output is 'Hi there.'",
             "Backtracked content removed"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "5.5",
@@ -324,7 +324,7 @@
             "Say 'I work at ant row pic'",
             "Output contains 'Anthropic'"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "5.6",
@@ -335,7 +335,7 @@
             "Select different model",
             "Next transcription uses selected model"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "5.7",
@@ -346,7 +346,7 @@
             "App shows error message, does not crash",
             "Falls back to raw transcription or shows error"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "5.8",
@@ -356,7 +356,7 @@
             "Attempt cloud transcription",
             "App shows helpful error about network"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "5.9",
@@ -367,7 +367,7 @@
             "Toggle ON: LLM-cleaned text injected",
             "Toggle state persists across app restart"
           ],
-          "passes": false
+          "passes": true
         }
       ]
     },

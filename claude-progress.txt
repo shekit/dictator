@@ -172,3 +172,51 @@ This file tracks progress across coding sessions. Append new entries at the bott
 
 ---
 
+## Session 5 - 2026-01-20 (Phase 5 Complete)
+- Implemented all Phase 5 features (5.1 - 5.9)
+- Created OpenRouter API client for cloud LLM processing
+- Created EnvLoader for .env file configuration
+- Created LLMService with prompt system (main, advanced, dictionary)
+- Added model selection and LLM toggle to menu bar
+
+### Files Created
+- Dictator/Sources/Dictator/Storage/EnvLoader.swift
+- Dictator/Sources/Dictator/LLM/OpenRouterClient.swift
+- Dictator/Sources/Dictator/LLM/LLMService.swift
+
+### Files Modified
+- Dictator/Sources/Dictator/Audio/RecordingService.swift (added LLM processing step)
+- Dictator/Sources/Dictator/UI/StatusBarController.swift (added LLM toggle, model selection)
+- Dictator/Sources/Dictator/App/AppDelegate.swift (EnvLoader initialization)
+
+### Implementation Details
+- EnvLoader reads .env from: app bundle dir, ~/.env, or ~/Documents/Dictator/.env
+- OpenRouterClient with retry logic, rate limiting, and error handling
+- 8 cloud models available: Groq Llama, Claude, GPT-4o, Gemini, Mistral
+- LLMService.ProcessingMode: .cloud, .local (Phase 6), .off
+- Main prompt removes fillers (um, uh, like, you know) and adds punctuation
+- Advanced prompt (toggleable) handles backtracking/corrections
+- Dictionary entries allow custom term replacements
+- All settings persist via UserDefaults
+- Graceful fallback to raw transcription on API errors
+
+### Menu Bar Changes
+- "LLM: Cloud: Llama 3.1 70B" status display
+- "Enable/Disable LLM Processing" toggle
+- "Cloud Model" submenu with checkmarked selection
+
+### Verification
+- `swift build` succeeds without errors
+- App bundle created at Dictator/Dictator.app
+- .env file loaded correctly at startup
+- OpenRouter API calls work with valid key
+- Model selection persists across restarts
+- Toggle state persists across restarts
+- Falls back to raw text on API error
+
+### Current State
+- Phase 5 complete (9/9 features passing)
+- Next: Phase 6, Feature 6.1 (Check if Ollama is running)
+
+---
+
