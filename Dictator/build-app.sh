@@ -1,6 +1,10 @@
 #!/bin/bash
 # Build and package Dictator as a macOS .app bundle
 # Also resets onboarding state before building
+#
+# Usage:
+#   ./build-app.sh              # Build without clearing models
+#   ./build-app.sh --clear-models   # Build and clear models (~443MB re-download)
 
 set -e
 
@@ -9,8 +13,8 @@ BUILD_DIR="$SCRIPT_DIR/.build/release"
 APP_NAME="Dictator"
 APP_BUNDLE="$SCRIPT_DIR/$APP_NAME.app"
 
-# Reset onboarding state first
-"$SCRIPT_DIR/reset-onboarding.sh"
+# Reset onboarding state first (pass through any flags)
+"$SCRIPT_DIR/reset-onboarding.sh" "$@"
 echo ""
 
 echo "Building $APP_NAME..."

@@ -2,6 +2,26 @@
 
 # Reset Onboarding Script
 # Completely resets Dictator app to first-run state
+#
+# Usage:
+#   ./reset-onboarding.sh              # Reset without deleting models
+#   ./reset-onboarding.sh --clear-models   # Reset and delete models (~443MB re-download)
+
+# Parse arguments
+CLEAR_MODELS=false
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --clear-models|-m)
+            CLEAR_MODELS=true
+            shift
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Usage: ./reset-onboarding.sh [--clear-models]"
+            exit 1
+            ;;
+    esac
+done
 
 echo "🔄 Resetting Dictator app..."
 
@@ -18,13 +38,24 @@ tccutil reset Accessibility com.dictator.app 2>/dev/null || echo "    (Accessibi
 echo "  Clearing UserDefaults..."
 defaults delete com.dictator.app 2>/dev/null || echo "    (No UserDefaults found)"
 
-# Clear FluidAudio model cache (to simulate first-time download)
-echo "  Clearing FluidAudio model cache..."
-if [ -d ~/Library/Caches/com.fluidinference.fluidaudio ]; then
-    rm -rf ~/Library/Caches/com.fluidinference.fluidaudio
-    echo "    (Model cache removed - ~200MB will download on next launch)"
+# Conditionally clear FluidAudio models
+if [ "$CLEAR_MODELS" = true ]; then
+    echo "  Clearing FluidAudio models (--clear-models flag set)..."
+    MODELS_DIR="$HOME/Library/Application Support/FluidAudio"
+    if [ -d "$MODELS_DIR" ]; then
+        MODEL_SIZE=$(du -sh "$MODELS_DIR" 2>/dev/null | cut -f1)
+        rm -rf "$MODELS_DIR"
+        echo "    ✓ Models removed (~$MODEL_SIZE will re-download on next launch)"
+    else
+        echo "    (No models found)"
+    fi
 else
-    echo "    (No model cache found)"
+    echo "  Keeping FluidAudio models (use --clear-models to delete)"
+    MODELS_DIR="$HOME/Library/Application Support/FluidAudio/Models"
+    if [ -d "$MODELS_DIR" ]; then
+        MODEL_SIZE=$(du -sh "$MODELS_DIR" 2>/dev/null | cut -f1)
+        echo "    (Models present: ~$MODEL_SIZE)"
+    fi
 fi
 
 # Optional: Clear transcription logs

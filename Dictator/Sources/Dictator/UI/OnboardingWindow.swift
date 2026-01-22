@@ -51,7 +51,7 @@ struct OnboardingWindow: View {
         OnboardingStep(
             icon: "arrow.down.circle.fill",
             title: "Downloading Voice Models",
-            description: "Downloading speech recognition models (~200MB).\n\nThis only happens once.",
+            description: "Downloading speech recognition models.\n\nThis only happens once.",
             actionTitle: "Downloading...",
             action: .downloadModels
         ),
@@ -152,6 +152,12 @@ struct OnboardingWindow: View {
                         Text(downloadStatus)
                             .font(.body)
                             .foregroundColor(.secondary)
+
+                        if isDownloadingModels {
+                            Text("This may take 2-5 minutes. Please wait.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
 
                         if !isDownloadingModels && downloadProgress >= 1.0 {
                             Text("✓ Models ready!")
@@ -352,10 +358,11 @@ struct OnboardingWindow: View {
         Task {
             // Monitor actual download progress by checking cache directory
             let progressTask = Task {
-                let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
-                    .appendingPathComponent("com.fluidinference.fluidaudio/models/v2")
+                // Use the correct Application Support directory where FluidAudio stores models
+                let cacheDir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+                    .appendingPathComponent("FluidAudio/Models/parakeet-tdt-0.6b-v2-coreml")
 
-                let expectedSize: Double = 200 * 1024 * 1024 // 200MB in bytes
+                let expectedSize: Double = 443 * 1024 * 1024 // 443MB in bytes (actual model size)
 
                 while !Task.isCancelled {
                     // Calculate actual size of downloaded files
@@ -418,9 +425,17 @@ struct OnboardingWindow: View {
             guard FileManager.default.fileExists(atPath: url.path) else { return 0 }
 
             var totalSize: Int64 = 0
-            if let enumerator = FileManager.default.enumerator(at: url, includingPropertiesForKeys: [.fileSizeKey], options: [.skipsHiddenFiles]) {
+            // Enumerate directory efficiently with minimal options
+            if let enumerator = FileManager.default.enumerator(
+                at: url,
+                includingPropertiesForKeys: [.fileSizeKey, .isDirectoryKey],
+                options: [.skipsHiddenFiles]
+            ) {
                 for case let fileURL as URL in enumerator {
-                    if let resourceValues = try? fileURL.resourceValues(forKeys: [.fileSizeKey]),
+                    // Skip directories, only count files
+                    if let resourceValues = try? fileURL.resourceValues(forKeys: [.isDirectoryKey, .fileSizeKey]),
+                       let isDirectory = resourceValues.isDirectory,
+                       !isDirectory,
                        let fileSize = resourceValues.fileSize {
                         totalSize += Int64(fileSize)
                     }
