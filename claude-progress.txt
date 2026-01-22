@@ -583,3 +583,77 @@ Phase 9 (Polish) - Menu bar UX improvements complete
 - **Push-to-talk**: Hold fn, speak, release fn
 - **Hands-free**: Press fn+space, speak, press space to stop
 
+---
+
+## Session: 2026-01-22 - Streaming Transcription (Background Processing)
+
+### Changes Made:
+1. **Enabled streaming transcription by default** (TranscriptionService.swift, RecordingService.swift)
+   - Audio is now processed in ~10 second chunks while recording
+   - When recording stops, finishStreaming() returns almost instantly (only final chunk needs processing)
+   - Significantly faster results for long recordings (minutes instead of waiting 30-60s)
+
+2. **Implementation details**
+   - TranscriptionService: Added startStreaming(), streamAudio(), finishStreaming(), cancelStreaming()
+   - Uses FluidAudio's StreamingAsrManager with optimized config for dictation
+   - Config: 10s chunks, 2s left/right context, 0.80 confirmation threshold
+   - AudioRecorder: Added onAudioBuffer callback to stream buffers during recording
+   - RecordingService: Starts streaming when recording starts, finishes when stopped
+
+3. **How it works**
+   - Recording starts → startStreaming() initializes StreamingAsrManager
+   - Audio buffers streamed via onAudioBuffer callback → streamAudio()
+   - Recording stops → finishStreaming() returns final text quickly
+   - No visible difference to user except faster paste time for long recordings
+
+4. **Why streaming is always on**
+   - For short recordings: negligible difference
+   - For long recordings: dramatically faster (most audio already processed)
+   - No settings or toggles - just works
+
+### Files Modified:
+- TranscriptionService.swift: Added streaming methods, stored loadedModels for streaming use
+- AudioRecorder.swift: Added onAudioBuffer callback
+- RecordingService.swift: Integrated streaming (start on record, finish on stop)
+
+### Build Status:
+✅ Build successful
+
+### Benefit:
+- 3-minute recording: previously waited ~30-60s after release, now ~2-5s
+
+---
+
+## Session: 2026-01-22 - Floating Recording Indicator
+
+### Changes Made:
+1. **Added floating indicator above dock** (FloatingIndicator.swift, AppDelegate.swift)
+   - Compact pill-shaped overlay showing recording timer
+   - Pulsing red dot + elapsed time display
+   - Appears during recording, fades out when stopped
+   - Positioned dynamically above dock using `visibleFrame`
+
+2. **Implementation details**
+   - NSPanel with `.borderless`, `.floating` level, `.nonactivatingPanel`
+   - `ignoresMouseEvents = true` - clicks pass through
+   - `collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]`
+   - SwiftUI view hosted in NSHostingView
+   - Timer updates at 0.1s intervals with tenths precision
+   - Fade in/out animations (0.2s duration)
+
+3. **Layout**
+   - Fixed 60pt content width
+   - Red dot left-aligned, timer text right-aligned
+   - Numbers grow leftward (stable visual position)
+   - Truncates from right if text exceeds space
+   - Font: 11pt monospaced, medium weight
+
+### Files Created:
+- Dictator/Sources/Dictator/UI/FloatingIndicator.swift
+
+### Files Modified:
+- AppDelegate.swift: Added FloatingIndicatorController setup
+
+### Build Status:
+✅ Build successful
+

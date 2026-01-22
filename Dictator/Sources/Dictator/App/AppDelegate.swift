@@ -6,6 +6,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusBarController: StatusBarController?
     private var recordingService: RecordingService?
     private var onboardingWindowController: NSWindowController?
+    private var floatingIndicator: FloatingIndicatorController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Load configuration
@@ -108,6 +109,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
             // Initialize the service
             service.initialize()
+
+            // Set up floating indicator
+            floatingIndicator = FloatingIndicatorController()
+            floatingIndicator?.setup(recordingService: service)
         }
 
         // Start loading ASR models in background
