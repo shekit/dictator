@@ -545,3 +545,41 @@ This file tracks progress across coding sessions. Append new entries at the bott
 ### Phase Status:
 Phase 9 (Polish) - Menu bar UX improvements complete
 
+---
+
+## Session: 2026-01-22 - Hands-Free Recording Mode
+
+### Changes Made:
+1. **Added hands-free recording mode** (GlobalHotkeyManager.swift, RecordingService.swift)
+   - fn+space to start hands-free recording (recording continues after releasing fn)
+   - Space alone to stop recording when in hands-free mode
+   - Space key consumed during hands-free mode to prevent typing
+   - Push-to-talk (hold fn) still works as before
+
+2. **Implementation details**
+   - Added `.handsFreeToggle` event to GlobalHotkeyManager.HotkeyEvent enum
+   - Added `isInHandsFreeMode` flag on GlobalHotkeyManager (set by RecordingService)
+   - Added `isHandsFreeMode` published property on RecordingService
+   - Space keycode (49) detected separately from other keys
+   - fn key cannot be consumed (triggers emoji picker), but space can be consumed
+
+3. **Why fn alone couldn't stop recording**
+   - fn/Globe key is a modifier key handled at system level via flagsChanged events
+   - macOS triggers emoji picker at a lower level than CGEvent taps
+   - Returning nil for flagsChanged events doesn't block system behavior
+   - Space key (regular keyDown event) can be fully consumed by returning nil
+
+### Files Modified:
+- GlobalHotkeyManager.swift: Added handsFreeToggle event, isInHandsFreeMode flag, space key detection
+- RecordingService.swift: Added isHandsFreeMode tracking, handleHandsFreeToggle() method
+- AudioRecorder.swift: Added onAudioBuffer callback for streaming
+- TranscriptionService.swift: Added streaming transcription support
+
+### Build Status:
+✅ Build successful
+✅ Committed: 9e01415
+
+### Usage:
+- **Push-to-talk**: Hold fn, speak, release fn
+- **Hands-free**: Press fn+space, speak, press space to stop
+
