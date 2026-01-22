@@ -1,5 +1,6 @@
 import Foundation
 import FluidAudio
+import AVFoundation
 
 /// Actor to serialize FluidAudio/CoreML calls (cannot handle concurrent transcriptions)
 private actor TranscriptionExecutor {
@@ -26,7 +27,12 @@ final class TranscriptionService: ObservableObject {
     @Published private(set) var isModelLoaded: Bool = false
 
     private var asrManager: AsrManager?
+    private var loadedModels: AsrModels?
     private let executor = TranscriptionExecutor()
+
+    // Streaming components
+    private var streamingManager: StreamingAsrManager?
+    private var updateListenerTask: Task<Void, Never>?
 
     private init() {}
 
@@ -57,7 +63,10 @@ final class TranscriptionService: ObservableObject {
                 print("[TranscriptionService] Models downloaded to cache")
             }
 
-            // Initialize AsrManager
+            // Store models for streaming use
+            self.loadedModels = models
+
+            // Initialize AsrManager (for batch mode fallback)
             let manager = AsrManager(config: ASRConfig.default)
             try await manager.initialize(models: models)
 
@@ -122,10 +131,100 @@ final class TranscriptionService: ObservableObject {
         }
     }
 
+    // MARK: - Streaming Transcription
+
+    /// Start streaming transcription session
+    /// Audio will be processed in chunks as it comes in, making final transcription nearly instant
+    func startStreaming() async throws {
+        guard let models = loadedModels else {
+            throw TranscriptionError.notInitialized
+        }
+
+        // Cancel any existing streaming session
+        await cancelStreaming()
+
+        // Create streaming manager with config optimized for dictation
+        let config = StreamingAsrConfig(
+            chunkSeconds: 10.0,       // Process in 10s chunks
+            hypothesisChunkSeconds: 2.0,
+            leftContextSeconds: 2.0,
+            rightContextSeconds: 2.0,
+            minContextForConfirmation: 5.0,
+            confirmationThreshold: 0.80
+        )
+
+        let manager = StreamingAsrManager(config: config)
+        self.streamingManager = manager
+
+        // Start the streaming manager
+        try await manager.start(models: models, source: .microphone)
+
+        state = .transcribing
+        print("[TranscriptionService] Streaming started")
+
+        // Start listening for updates (just for logging, no injection)
+        updateListenerTask = Task { [weak self] in
+            guard self != nil else { return }
+
+            for await update in await manager.transcriptionUpdates {
+                print("[TranscriptionService] Streaming update: '\(update.text)' (confirmed: \(update.isConfirmed))")
+            }
+        }
+    }
+
+    /// Stream audio buffer to the transcription service
+    func streamAudio(_ buffer: AVAudioPCMBuffer) async {
+        guard let manager = streamingManager else { return }
+        await manager.streamAudio(buffer)
+    }
+
+    /// Finish streaming and get final transcription
+    func finishStreaming() async throws -> String {
+        guard let manager = streamingManager else {
+            throw TranscriptionError.notInitialized
+        }
+
+        print("[TranscriptionService] Finishing streaming...")
+
+        // Get final transcription (should be fast since most processing is done)
+        let finalText = try await manager.finish()
+
+        // Cancel update listener
+        updateListenerTask?.cancel()
+        updateListenerTask = nil
+
+        // Cleanup
+        streamingManager = nil
+        state = .idle
+
+        let result = finalText.trimmingCharacters(in: .whitespacesAndNewlines)
+        print("[TranscriptionService] Streaming finished: '\(result)'")
+
+        return result
+    }
+
+    /// Cancel streaming without getting results
+    func cancelStreaming() async {
+        if let manager = streamingManager {
+            await manager.cancel()
+        }
+        updateListenerTask?.cancel()
+        updateListenerTask = nil
+        streamingManager = nil
+
+        if case .transcribing = state {
+            state = .idle
+        }
+    }
+
     /// Cleanup resources
     func cleanup() {
+        Task {
+            await cancelStreaming()
+        }
         asrManager?.cleanup()
         asrManager = nil
+        loadedModels = nil
         isModelLoaded = false
         state = .idle
         print("[TranscriptionService] Cleaned up")

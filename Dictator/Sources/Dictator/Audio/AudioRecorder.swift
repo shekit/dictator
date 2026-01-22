@@ -73,6 +73,9 @@ final class AudioRecorder: ObservableObject {
     private var recordingStartTime: Date?
     private var isInitialized = false
 
+    /// Callback for streaming audio buffers during recording
+    var onAudioBuffer: ((AVAudioPCMBuffer) -> Void)?
+
     // MARK: - Initialization
 
     init() {
@@ -199,9 +202,13 @@ final class AudioRecorder: ObservableObject {
                 // Convert to target format
                 if let convertedBuffer = self.convertBuffer(buffer, from: nativeFormat, to: targetFormat) {
                     self.processAudioBuffer(convertedBuffer)
+                    // Stream to transcription service
+                    self.onAudioBuffer?(convertedBuffer)
                 }
             } else {
                 self.processAudioBuffer(buffer)
+                // Stream to transcription service
+                self.onAudioBuffer?(buffer)
             }
         }
 

@@ -8,9 +8,10 @@ final class GlobalHotkeyManager {
     // MARK: - Types
 
     enum HotkeyEvent {
-        case keyDown      // fn pressed - start recording
-        case keyUp        // fn released - complete recording
-        case cancelled    // fn + other key - cancel recording
+        case keyDown          // fn pressed - start recording
+        case keyUp            // fn released - complete recording
+        case cancelled        // fn + other key - cancel recording
+        case handsFreeToggle  // fn + space - toggle hands-free mode
     }
 
     typealias HotkeyHandler = (HotkeyEvent) -> Void
@@ -25,8 +26,14 @@ final class GlobalHotkeyManager {
     private var wasOtherKeyPressed = false
     private let handler: HotkeyHandler
 
+    /// Set by RecordingService when in hands-free recording mode.
+    /// When true, space key alone will stop recording.
+    var isInHandsFreeMode = false
+
     /// fn key code
     private let fnKeyCode: Int64 = 63  // 0x3F
+    /// Space key code (for hands-free toggle)
+    private let spaceKeyCode: Int64 = 49  // 0x31
 
     private var healthCheckTimer: Timer?
     private var permissionCheckTimer: Timer?
@@ -184,13 +191,31 @@ final class GlobalHotkeyManager {
             return Unmanaged.passUnretained(event)
         }
 
-        // If fn is pressed and any other key is pressed, cancel recording
+        // If fn is pressed and another key is pressed
         if type == .keyDown && isFnPressed {
-            print("[Hotkey] Other key pressed while fn held (keyCode: \(keyCode)) - cancelling")
-            wasOtherKeyPressed = true
-            handleCancelled()
-            // Let the event pass through (e.g., for F1-F12 functionality)
-            return Unmanaged.passUnretained(event)
+            // fn + space = hands-free toggle
+            if keyCode == spaceKeyCode {
+                print("[Hotkey] fn + space pressed - hands-free toggle")
+                wasOtherKeyPressed = true
+                handleHandsFreeToggle()
+                // Consume the space key event so it doesn't type a space
+                return nil
+            } else {
+                // fn + other key = cancel
+                print("[Hotkey] Other key pressed while fn held (keyCode: \(keyCode)) - cancelling")
+                wasOtherKeyPressed = true
+                handleCancelled()
+                // Let the event pass through (e.g., for F1-F12 functionality)
+                return Unmanaged.passUnretained(event)
+            }
+        }
+
+        // If in hands-free mode and space is pressed alone (without fn), stop recording
+        if type == .keyDown && isInHandsFreeMode && keyCode == spaceKeyCode && !isFnPressed {
+            print("[Hotkey] Space pressed in hands-free mode - stopping recording")
+            handleHandsFreeToggle()
+            // Consume the space key event so it doesn't type a space
+            return nil
         }
 
         return Unmanaged.passUnretained(event)
@@ -228,6 +253,13 @@ final class GlobalHotkeyManager {
         // Call handler on main thread
         DispatchQueue.main.async { [weak self] in
             self?.handler(.cancelled)
+        }
+    }
+
+    private func handleHandsFreeToggle() {
+        // Call handler on main thread
+        DispatchQueue.main.async { [weak self] in
+            self?.handler(.handsFreeToggle)
         }
     }
 

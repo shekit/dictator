@@ -23,6 +23,7 @@ final class RecordingService: ObservableObject {
     @Published private(set) var lastBufferSize: Int = 0
     @Published private(set) var lastTranscription: String = ""
     @Published private(set) var lastProcessedText: String = ""
+    @Published private(set) var isHandsFreeMode: Bool = false
 
     // MARK: - Properties
 
@@ -96,11 +97,44 @@ final class RecordingService: ObservableObject {
     private func handleHotkeyEvent(_ event: GlobalHotkeyManager.HotkeyEvent) {
         switch event {
         case .keyDown:
-            startRecording()
+            // Only start recording in push-to-talk mode (not hands-free)
+            if !isHandsFreeMode {
+                startRecording()
+            }
         case .keyUp:
-            stopRecording()
+            // Only stop on key up in push-to-talk mode (not hands-free)
+            if !isHandsFreeMode {
+                stopRecording()
+            } else {
+                print("[RecordingService] Hands-free mode: ignoring fn release")
+            }
         case .cancelled:
             cancelRecording()
+            isHandsFreeMode = false
+            hotkeyManager?.isInHandsFreeMode = false
+        case .handsFreeToggle:
+            handleHandsFreeToggle()
+        }
+    }
+
+    private func handleHandsFreeToggle() {
+        if isHandsFreeMode, case .recording = state {
+            // Already in hands-free mode and recording - stop recording
+            print("[RecordingService] Hands-free mode: stopping recording")
+            isHandsFreeMode = false
+            hotkeyManager?.isInHandsFreeMode = false
+            stopRecording()
+        } else if case .recording = state {
+            // Recording (from fn press), switch to hands-free mode
+            isHandsFreeMode = true
+            hotkeyManager?.isInHandsFreeMode = true
+            print("[RecordingService] Switched to hands-free mode - press space to stop")
+        } else if case .idle = state {
+            // Not recording yet, start in hands-free mode
+            isHandsFreeMode = true
+            hotkeyManager?.isInHandsFreeMode = true
+            startRecording()
+            print("[RecordingService] Started recording in hands-free mode - press space to stop")
         }
     }
 
@@ -110,8 +144,10 @@ final class RecordingService: ObservableObject {
             return
         }
 
-        // Stop recording but discard the audio
+        // Stop recording and cancel streaming
         _ = audioRecorder.stopRecording()
+        audioRecorder.onAudioBuffer = nil
+        Task { await transcriptionService.cancelStreaming() }
         state = .idle
         print("[RecordingService] Recording cancelled (fn + other key)")
     }
@@ -139,10 +175,41 @@ final class RecordingService: ObservableObject {
             return
         }
 
-        audioRecorder.startRecording()
-        state = .recording
-        soundEffectService.playRecordingStart()
-        print("[RecordingService] Recording started")
+        // Start streaming transcription in background
+        Task {
+            do {
+                // Ensure models are loaded
+                if !transcriptionService.isModelLoaded {
+                    print("[RecordingService] Models not loaded, loading now...")
+                    try await transcriptionService.prepareModels()
+                }
+
+                // Start streaming session
+                try await transcriptionService.startStreaming()
+
+                // Set up audio buffer callback to stream to transcription service
+                audioRecorder.onAudioBuffer = { [weak self] buffer in
+                    Task { [weak self] in
+                        await self?.transcriptionService.streamAudio(buffer)
+                    }
+                }
+
+                // Now start recording
+                await MainActor.run {
+                    self.audioRecorder.startRecording()
+                    self.state = .recording
+                    self.soundEffectService.playRecordingStart()
+                    print("[RecordingService] Recording started (with streaming)")
+                }
+            } catch {
+                await MainActor.run {
+                    let errorMsg = "Failed to start: \(error.localizedDescription)"
+                    self.state = .error(errorMsg)
+                    self.notificationService.showError(message: errorMsg)
+                    print("[RecordingService] Start error: \(error)")
+                }
+            }
+        }
     }
 
     private func stopRecording() {
@@ -151,52 +218,49 @@ final class RecordingService: ObservableObject {
             return
         }
 
+        // Stop audio recording
         guard let result = audioRecorder.stopRecording() else {
+            audioRecorder.onAudioBuffer = nil
+            Task { await transcriptionService.cancelStreaming() }
             state = .idle
             print("[RecordingService] No audio captured")
             return
         }
 
+        // Clear the streaming callback
+        audioRecorder.onAudioBuffer = nil
+
         lastRecordingDuration = result.duration
         lastBufferSize = result.samples.count
         soundEffectService.playRecordingStop()
 
-        print("[RecordingService] Recording stopped - Duration: \(String(format: "%.2f", result.duration))s, Samples: \(result.samples.count)")
+        print("[RecordingService] Recording stopped - Duration: \(String(format: "%.2f", result.duration))s")
 
-        // Start transcription
-        transcribeAudio(samples: result.samples, duration: result.duration)
+        // Finish streaming transcription (should be fast since audio was processed in chunks)
+        finishStreamingTranscription(duration: result.duration)
     }
 
-    private func transcribeAudio(samples: [Float], duration: TimeInterval) {
+    private func finishStreamingTranscription(duration: TimeInterval) {
         state = .transcribing
 
         Task {
-            // Safety timeout: if processing takes more than 90 seconds, force reset to idle
+            // Safety timeout
             let timeoutTask = Task {
                 try? await Task.sleep(for: .seconds(90))
-                if case .idle = self.state {
-                    // Already completed successfully
-                    return
-                }
-                print("[RecordingService] ⚠️ Safety timeout triggered - forcing reset to idle")
+                if case .idle = self.state { return }
+                print("[RecordingService] ⚠️ Safety timeout triggered")
                 await MainActor.run {
                     self.state = .idle
                     self.notificationService.showError(
                         title: "Processing Timeout",
-                        message: "The request took too long and was cancelled. Try again or switch to a different mode."
+                        message: "The request took too long and was cancelled."
                     )
                 }
             }
 
             do {
-                // Ensure models are loaded
-                if !transcriptionService.isModelLoaded {
-                    print("[RecordingService] Models not loaded, loading now...")
-                    try await transcriptionService.prepareModels()
-                }
-
-                // Transcribe
-                let rawText = try await transcriptionService.transcribe(samples)
+                // Finish streaming and get final text (should be fast!)
+                let rawText = try await transcriptionService.finishStreaming()
                 lastTranscription = rawText
 
                 print("[RecordingService] Transcription complete: '\(rawText)'")
@@ -217,7 +281,7 @@ final class RecordingService: ObservableObject {
                 if wasProcessed {
                     print("[RecordingService] LLM processed: '\(processedText)'")
                 } else {
-                    print("[RecordingService] Using raw transcription (LLM disabled or failed)")
+                    print("[RecordingService] Using raw transcription")
                 }
 
                 // Inject text at cursor position
@@ -233,7 +297,6 @@ final class RecordingService: ObservableObject {
                 // Notify callback
                 onTranscriptionComplete?(rawText, processedText, duration, wasProcessed)
 
-                // Cancel timeout and return to idle
                 timeoutTask.cancel()
                 state = .idle
 
@@ -244,7 +307,6 @@ final class RecordingService: ObservableObject {
                 notificationService.showError(title: "Transcription Failed", message: error.localizedDescription)
                 print("[RecordingService] Transcription error: \(error)")
 
-                // Return to idle after a brief delay so user sees error
                 Task {
                     try? await Task.sleep(for: .seconds(2))
                     if case .error = self.state {
@@ -254,4 +316,5 @@ final class RecordingService: ObservableObject {
             }
         }
     }
+
 }
