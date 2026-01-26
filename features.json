@@ -1,9 +1,10 @@
 {
   "project": "Dictator",
-  "description": "macOS voice-to-text with LLM cleanup",
+  "description": "Voice-to-text with LLM cleanup for macOS, iOS, and Android",
   "phases": [
     {
       "phase": 1,
+      "platform": "macos",
       "name": "Shell",
       "description": "Basic menu bar app that launches and quits",
       "testable_outcome": "App launches, icon appears in menu bar, can quit",
@@ -52,6 +53,7 @@
     },
     {
       "phase": 2,
+      "platform": "macos",
       "name": "Audio Recording",
       "description": "Hold hotkey to record audio from microphone",
       "testable_outcome": "Hold hotkey, audio is captured, release stops recording",
@@ -133,6 +135,7 @@
     },
     {
       "phase": 3,
+      "platform": "macos",
       "name": "Speech-to-Text",
       "description": "Convert recorded audio to text using FluidAudio",
       "testable_outcome": "Speak into mic, raw transcription appears in console",
@@ -201,6 +204,7 @@
     },
     {
       "phase": 4,
+      "platform": "macos",
       "name": "Text Injection",
       "description": "Paste transcription at cursor position",
       "testable_outcome": "Speak, text appears at cursor in any app",
@@ -271,6 +275,7 @@
     },
     {
       "phase": 5,
+      "platform": "macos",
       "name": "LLM Processing (Cloud)",
       "description": "Clean up transcription using OpenRouter API",
       "testable_outcome": "Speak with filler words, cleaned text appears",
@@ -373,6 +378,7 @@
     },
     {
       "phase": 6,
+      "platform": "macos",
       "name": "LLM Processing (Local)",
       "description": "Clean up transcription using Ollama (fully offline)",
       "testable_outcome": "Toggle to local mode, disconnect wifi, cleaned text still works",
@@ -465,6 +471,7 @@
     },
     {
       "phase": 7,
+      "platform": "macos",
       "name": "Settings Window",
       "description": "Full settings UI with prompt editing",
       "testable_outcome": "Edit prompts in UI, changes affect output",
@@ -577,6 +584,7 @@
     },
     {
       "phase": 8,
+      "platform": "macos",
       "name": "Stats & Logging",
       "description": "Track usage statistics and save transcription history",
       "testable_outcome": "Stats show in menu, transcriptions logged to file",
@@ -676,6 +684,7 @@
     },
     {
       "phase": 9,
+      "platform": "macos",
       "name": "Polish",
       "description": "Production-ready experience with error handling",
       "testable_outcome": "App feels complete and handles edge cases gracefully",
@@ -760,11 +769,602 @@
           "passes": true
         }
       ]
+    },
+    {
+      "phase": 10,
+      "platform": "ios",
+      "name": "iOS Keyboard Shell",
+      "description": "Minimal iOS keyboard extension that appears and can switch back",
+      "testable_outcome": "Keyboard appears in iOS keyboard list, can switch to it and back",
+      "features": [
+        {
+          "id": "10.1",
+          "description": "Create iOS app with keyboard extension target",
+          "verification": [
+            "Project builds in Xcode",
+            "Both app and keyboard extension targets compile"
+          ],
+          "passes": false
+        },
+        {
+          "id": "10.2",
+          "description": "Keyboard appears in Settings > Keyboards",
+          "verification": [
+            "Install app on device/simulator",
+            "Go to Settings > General > Keyboard > Keyboards > Add",
+            "Dictator keyboard appears in list",
+            "Can add it to active keyboards"
+          ],
+          "passes": false
+        },
+        {
+          "id": "10.3",
+          "description": "Keyboard displays when selected",
+          "verification": [
+            "Open any app with text field (Notes)",
+            "Long-press globe icon",
+            "Select Dictator keyboard",
+            "Keyboard UI appears"
+          ],
+          "passes": false
+        },
+        {
+          "id": "10.4",
+          "description": "Minimal keyboard UI with mic button",
+          "verification": [
+            "Keyboard shows large mic button",
+            "Shows 'Tap to Dictate' label",
+            "Shows switch keyboard button"
+          ],
+          "passes": false
+        },
+        {
+          "id": "10.5",
+          "description": "Switch keyboard button works",
+          "verification": [
+            "Dictator keyboard is active",
+            "Tap globe/switch keyboard button",
+            "Returns to previous keyboard"
+          ],
+          "passes": false
+        }
+      ]
+    },
+    {
+      "phase": 11,
+      "platform": "ios",
+      "name": "iOS Audio & STT",
+      "description": "Record audio and transcribe using SFSpeechRecognizer",
+      "testable_outcome": "Tap mic, speak, see transcription in console",
+      "features": [
+        {
+          "id": "11.1",
+          "description": "Request microphone permission",
+          "verification": [
+            "Tap mic button for first time",
+            "iOS permission dialog appears",
+            "Grant permission",
+            "No crash"
+          ],
+          "passes": false
+        },
+        {
+          "id": "11.2",
+          "description": "Request speech recognition permission",
+          "verification": [
+            "First transcription attempt",
+            "iOS speech recognition permission dialog appears",
+            "Grant permission"
+          ],
+          "passes": false
+        },
+        {
+          "id": "11.3",
+          "description": "Record audio on mic tap",
+          "verification": [
+            "Tap mic to start recording",
+            "Visual indicator shows recording state",
+            "Tap again to stop",
+            "Console logs audio captured"
+          ],
+          "passes": false
+        },
+        {
+          "id": "11.4",
+          "description": "Transcribe audio via SFSpeechRecognizer",
+          "verification": [
+            "Record 'hello world'",
+            "Stop recording",
+            "Console logs transcription containing 'hello' and 'world'"
+          ],
+          "passes": false
+        },
+        {
+          "id": "11.5",
+          "description": "Visual recording indicator",
+          "verification": [
+            "Tap mic to start",
+            "Button changes appearance (color/animation)",
+            "Tap to stop",
+            "Button returns to normal"
+          ],
+          "passes": false
+        },
+        {
+          "id": "11.6",
+          "description": "Handle empty/silent recordings",
+          "verification": [
+            "Record silence for 2 seconds",
+            "Stop recording",
+            "App handles gracefully, no crash"
+          ],
+          "passes": false
+        }
+      ]
+    },
+    {
+      "phase": 12,
+      "platform": "ios",
+      "name": "iOS Text Insertion",
+      "description": "Insert transcribed text into active text field",
+      "testable_outcome": "Speak into keyboard, text appears in any app",
+      "features": [
+        {
+          "id": "12.1",
+          "description": "Insert text via UIInputViewController",
+          "verification": [
+            "Open Notes app",
+            "Switch to Dictator keyboard",
+            "Dictate 'hello world'",
+            "Text 'hello world' appears in Notes"
+          ],
+          "passes": false
+        },
+        {
+          "id": "12.2",
+          "description": "Works in any app",
+          "verification": [
+            "Test in Messages app",
+            "Test in Safari search bar",
+            "Test in third-party app (WhatsApp/Slack)",
+            "Text inserts correctly in all"
+          ],
+          "passes": false
+        },
+        {
+          "id": "12.3",
+          "description": "Processing indicator during transcription",
+          "verification": [
+            "Stop recording",
+            "See spinner/indicator while processing",
+            "Indicator clears when text inserted"
+          ],
+          "passes": false
+        },
+        {
+          "id": "12.4",
+          "description": "End-to-end: speak to text in any app",
+          "verification": [
+            "Open any app with text field",
+            "Switch to Dictator keyboard",
+            "Tap mic, say 'this is a test', tap stop",
+            "Text appears in the field"
+          ],
+          "passes": false
+        }
+      ]
+    },
+    {
+      "phase": 13,
+      "platform": "ios",
+      "name": "iOS Main App & Settings",
+      "description": "Main app for onboarding and cloud LLM configuration",
+      "testable_outcome": "App guides setup, cloud LLM cleans text",
+      "features": [
+        {
+          "id": "13.1",
+          "description": "Main app with onboarding flow",
+          "verification": [
+            "Fresh install",
+            "App shows steps: enable keyboard, grant permissions",
+            "Clear instructions guide user through setup"
+          ],
+          "passes": false
+        },
+        {
+          "id": "13.2",
+          "description": "Settings screen with cloud LLM toggle",
+          "verification": [
+            "Settings shows cloud LLM on/off toggle",
+            "Shows API key input field",
+            "Changes persist across app restart"
+          ],
+          "passes": false
+        },
+        {
+          "id": "13.3",
+          "description": "App Groups share settings with keyboard extension",
+          "verification": [
+            "Change setting in main app",
+            "Open keyboard in another app",
+            "Keyboard uses new setting"
+          ],
+          "passes": false
+        },
+        {
+          "id": "13.4",
+          "description": "Full Access permission for network (cloud LLM)",
+          "verification": [
+            "Enable cloud LLM in settings",
+            "App instructs user to enable Full Access",
+            "Settings > Keyboards > Dictator > Allow Full Access",
+            "Network requests work from keyboard"
+          ],
+          "passes": false
+        },
+        {
+          "id": "13.5",
+          "description": "OpenRouter API integration",
+          "verification": [
+            "Full Access enabled, API key set",
+            "Dictate 'um like hello'",
+            "Output is cleaned: 'Hello.'"
+          ],
+          "passes": false
+        },
+        {
+          "id": "13.6",
+          "description": "Graceful fallback on API error",
+          "verification": [
+            "Set invalid API key",
+            "Dictate text",
+            "Raw transcription inserted (no crash)",
+            "Error indicator briefly shown"
+          ],
+          "passes": false
+        }
+      ]
+    },
+    {
+      "phase": 14,
+      "platform": "android",
+      "name": "Android Keyboard Shell",
+      "description": "Minimal Android IME that appears and can switch back",
+      "testable_outcome": "Keyboard appears in Android input settings, can switch to it and back",
+      "features": [
+        {
+          "id": "14.1",
+          "description": "Create Android app with InputMethodService",
+          "verification": [
+            "Project builds in Android Studio",
+            "App installs on device/emulator"
+          ],
+          "passes": false
+        },
+        {
+          "id": "14.2",
+          "description": "Keyboard appears in system input settings",
+          "verification": [
+            "Install app",
+            "Go to Settings > System > Languages & input > On-screen keyboard",
+            "Dictator keyboard appears in list",
+            "Can enable it"
+          ],
+          "passes": false
+        },
+        {
+          "id": "14.3",
+          "description": "Keyboard displays when selected",
+          "verification": [
+            "Open any app with text field",
+            "Tap keyboard switcher icon in nav bar",
+            "Select Dictator",
+            "Keyboard UI appears"
+          ],
+          "passes": false
+        },
+        {
+          "id": "14.4",
+          "description": "Minimal keyboard UI with mic button",
+          "verification": [
+            "Keyboard shows large mic button",
+            "Shows 'Tap to Dictate' label",
+            "Shows switch keyboard button"
+          ],
+          "passes": false
+        },
+        {
+          "id": "14.5",
+          "description": "Switch keyboard button works",
+          "verification": [
+            "Dictator keyboard is active",
+            "Tap switch keyboard button",
+            "System keyboard picker appears"
+          ],
+          "passes": false
+        }
+      ]
+    },
+    {
+      "phase": 15,
+      "platform": "android",
+      "name": "Android Audio & STT",
+      "description": "Record audio and transcribe using Whisper or Vosk",
+      "testable_outcome": "Tap mic, speak, see transcription in logcat",
+      "features": [
+        {
+          "id": "15.1",
+          "description": "Request RECORD_AUDIO permission",
+          "verification": [
+            "Tap mic button for first time",
+            "Android permission dialog appears",
+            "Grant permission",
+            "Recording starts"
+          ],
+          "passes": false
+        },
+        {
+          "id": "15.2",
+          "description": "Initialize STT engine (Whisper.cpp or Vosk)",
+          "verification": [
+            "App/keyboard starts",
+            "STT model loads (may take a moment first time)",
+            "Logcat shows 'STT ready'"
+          ],
+          "passes": false
+        },
+        {
+          "id": "15.3",
+          "description": "Record audio on mic tap",
+          "verification": [
+            "Tap mic to start recording",
+            "Visual indicator shows recording state",
+            "Tap again to stop",
+            "Logcat shows audio captured"
+          ],
+          "passes": false
+        },
+        {
+          "id": "15.4",
+          "description": "Transcribe audio to text",
+          "verification": [
+            "Record 'hello world'",
+            "Stop recording",
+            "Logcat shows transcription containing 'hello' and 'world'"
+          ],
+          "passes": false
+        },
+        {
+          "id": "15.5",
+          "description": "Visual recording indicator",
+          "verification": [
+            "Tap mic to start",
+            "Button changes appearance",
+            "Tap to stop",
+            "Button returns to normal"
+          ],
+          "passes": false
+        },
+        {
+          "id": "15.6",
+          "description": "Handle empty/silent recordings",
+          "verification": [
+            "Record silence for 2 seconds",
+            "Stop recording",
+            "App handles gracefully, no crash"
+          ],
+          "passes": false
+        }
+      ]
+    },
+    {
+      "phase": 16,
+      "platform": "android",
+      "name": "Android Text Insertion",
+      "description": "Insert transcribed text into active text field",
+      "testable_outcome": "Speak into keyboard, text appears in any app",
+      "features": [
+        {
+          "id": "16.1",
+          "description": "Insert text via InputConnection",
+          "verification": [
+            "Open any notes app",
+            "Switch to Dictator keyboard",
+            "Dictate 'hello world'",
+            "Text 'hello world' appears in field"
+          ],
+          "passes": false
+        },
+        {
+          "id": "16.2",
+          "description": "Works in any app",
+          "verification": [
+            "Test in Messages",
+            "Test in Chrome URL bar",
+            "Test in third-party app (WhatsApp/Slack)",
+            "Text inserts correctly in all"
+          ],
+          "passes": false
+        },
+        {
+          "id": "16.3",
+          "description": "Processing indicator during transcription",
+          "verification": [
+            "Stop recording",
+            "See spinner/indicator while processing",
+            "Indicator clears when text inserted"
+          ],
+          "passes": false
+        },
+        {
+          "id": "16.4",
+          "description": "End-to-end: speak to text in any app",
+          "verification": [
+            "Open any app with text field",
+            "Switch to Dictator keyboard",
+            "Tap mic, say 'this is a test', tap stop",
+            "Text appears in the field"
+          ],
+          "passes": false
+        }
+      ]
+    },
+    {
+      "phase": 17,
+      "platform": "android",
+      "name": "Android Main App & Settings",
+      "description": "Main app for onboarding and cloud LLM configuration",
+      "testable_outcome": "App guides setup, cloud LLM cleans text",
+      "features": [
+        {
+          "id": "17.1",
+          "description": "Main app with onboarding flow",
+          "verification": [
+            "Fresh install",
+            "App shows steps: enable keyboard, grant permissions",
+            "Clear instructions guide user through setup"
+          ],
+          "passes": false
+        },
+        {
+          "id": "17.2",
+          "description": "Settings screen with cloud LLM toggle",
+          "verification": [
+            "Settings shows cloud LLM on/off toggle",
+            "Shows API key input field",
+            "Changes persist across app restart"
+          ],
+          "passes": false
+        },
+        {
+          "id": "17.3",
+          "description": "SharedPreferences accessible from IME service",
+          "verification": [
+            "Change setting in main app",
+            "Open keyboard in another app",
+            "Keyboard uses new setting"
+          ],
+          "passes": false
+        },
+        {
+          "id": "17.4",
+          "description": "OpenRouter API integration",
+          "verification": [
+            "Cloud LLM enabled, API key set",
+            "Dictate 'um like hello'",
+            "Output is cleaned: 'Hello.'"
+          ],
+          "passes": false
+        },
+        {
+          "id": "17.5",
+          "description": "Graceful fallback on API error",
+          "verification": [
+            "Set invalid API key",
+            "Dictate text",
+            "Raw transcription inserted (no crash)",
+            "Error indicator briefly shown"
+          ],
+          "passes": false
+        }
+      ]
+    },
+    {
+      "phase": 18,
+      "platform": "mobile",
+      "name": "Mobile Polish",
+      "description": "UX refinements for both iOS and Android",
+      "testable_outcome": "Both mobile apps feel complete and polished",
+      "features": [
+        {
+          "id": "18.1",
+          "description": "Live transcription preview (iOS)",
+          "verification": [
+            "Start recording on iOS",
+            "Speak continuously",
+            "See words appear in keyboard UI as you speak"
+          ],
+          "passes": false
+        },
+        {
+          "id": "18.2",
+          "description": "Live transcription preview (Android)",
+          "verification": [
+            "Start recording on Android",
+            "Speak continuously",
+            "See words appear in keyboard UI as you speak"
+          ],
+          "passes": false
+        },
+        {
+          "id": "18.3",
+          "description": "Auto-stop on silence (iOS)",
+          "verification": [
+            "Start recording",
+            "Speak, then stop speaking",
+            "After ~2 seconds of silence, recording auto-stops"
+          ],
+          "passes": false
+        },
+        {
+          "id": "18.4",
+          "description": "Auto-stop on silence (Android)",
+          "verification": [
+            "Start recording",
+            "Speak, then stop speaking",
+            "After ~2 seconds of silence, recording auto-stops"
+          ],
+          "passes": false
+        },
+        {
+          "id": "18.5",
+          "description": "Haptic feedback (iOS)",
+          "verification": [
+            "Tap mic to start - feel haptic tap",
+            "Tap to stop - feel different haptic"
+          ],
+          "passes": false
+        },
+        {
+          "id": "18.6",
+          "description": "Haptic feedback (Android)",
+          "verification": [
+            "Tap mic to start - feel vibration",
+            "Tap to stop - feel different vibration"
+          ],
+          "passes": false
+        },
+        {
+          "id": "18.7",
+          "description": "Error states with recovery (iOS)",
+          "verification": [
+            "Deny mic permission",
+            "Tap mic button",
+            "Clear error message shown",
+            "Tap opens iOS Settings to fix"
+          ],
+          "passes": false
+        },
+        {
+          "id": "18.8",
+          "description": "Error states with recovery (Android)",
+          "verification": [
+            "Deny mic permission",
+            "Tap mic button",
+            "Clear error message shown",
+            "Tap opens Android Settings to fix"
+          ],
+          "passes": false
+        }
+      ]
     }
   ],
   "metadata": {
-    "total_features": 55,
+    "total_features": 97,
+    "macos_features": 55,
+    "ios_features": 21,
+    "android_features": 21,
     "created": "2026-01-20",
-    "last_updated": "2026-01-20"
+    "last_updated": "2026-01-26"
   }
 }

@@ -2,16 +2,36 @@
 
 ## Project Overview
 
-Dictator is a macOS menu bar app for voice-to-text dictation with LLM-powered text cleanup. Hold a hotkey, speak, release, and cleaned text appears at your cursor.
+Dictator is a cross-platform voice-to-text dictation app with optional LLM-powered text cleanup.
+
+- **macOS:** Menu bar app. Hold hotkey, speak, release, cleaned text appears at cursor.
+- **iOS/Android:** Custom keyboard. Switch to keyboard, tap mic, speak, text inserted.
+
+For mobile implementation details, see `MOBILE_ARCHITECTURE.md`.
 
 ## Tech Stack
 
+### macOS
 - **Language:** Swift 5.9+
 - **Platform:** macOS 14.0+ (Sonoma), Apple Silicon
 - **STT:** FluidAudio (Parakeet model on Neural Engine)
 - **LLM Local:** Ollama (localhost:11434)
 - **LLM Cloud:** OpenRouter API (Groq, Claude, etc.)
 - **UI:** SwiftUI + AppKit (menu bar + settings window)
+
+### iOS (Phases 10-13)
+- **Language:** Swift 5.9+
+- **Platform:** iOS 16.0+
+- **STT:** SFSpeechRecognizer (Apple Speech framework)
+- **LLM:** OpenRouter API (cloud only, requires Full Access)
+- **UI:** Custom keyboard extension + SwiftUI main app
+
+### Android (Phases 14-17)
+- **Language:** Kotlin
+- **Platform:** Android 8.0+ (API 26)
+- **STT:** Whisper.cpp or Vosk (on-device)
+- **LLM:** OpenRouter API (cloud only)
+- **UI:** InputMethodService (IME) + Jetpack Compose main app
 
 ## Execution Modes
 
@@ -54,27 +74,44 @@ Every coding session, follow this sequence:
 - Leave uncommitted changes at session end
 - Work on multiple features simultaneously
 
+### Platform Build Order
+- **macOS (Phases 1-9):** Must complete first - it's the foundation
+- **iOS (Phases 10-13):** Can start after macOS is complete
+- **Android (Phases 14-17):** Can start after macOS is complete
+- **Mobile Polish (Phase 18):** Requires both iOS and Android complete
+
+iOS and Android are independent and can be built in parallel.
+
 ## File Structure
 
 ```
 dictator/
 ├── CLAUDE.md                 # This file - agent instructions
-├── ARCHITECTURE.md           # Project architecture overview
+├── ARCHITECTURE.md           # macOS architecture overview
+├── MOBILE_ARCHITECTURE.md    # iOS & Android architecture overview
 ├── features.json             # Feature tracking (update passes field only)
 ├── claude-progress.txt       # Session progress log (append only)
 ├── init.sh                   # Dev environment setup script
-└── Dictator/                 # Main Xcode project (to be created)
-    ├── Package.swift
-    └── Sources/
-        └── Dictator/
-            ├── App/          # App entry point, AppDelegate
-            ├── Audio/        # Recording, microphone capture
-            ├── STT/          # FluidAudio integration
-            ├── LLM/          # Ollama + OpenRouter clients
-            ├── Injection/    # Clipboard, text injection
-            ├── UI/           # Menu bar, settings window
-            ├── Stats/        # Word count, WPM, logging
-            └── Storage/      # Persistence, settings
+├── Dictator/                 # macOS app (Swift Package)
+│   ├── Package.swift
+│   └── Sources/
+│       └── Dictator/
+│           ├── App/          # App entry point, AppDelegate
+│           ├── Audio/        # Recording, microphone capture
+│           ├── STT/          # FluidAudio integration
+│           ├── LLM/          # Ollama + OpenRouter clients
+│           ├── Injection/    # Clipboard, text injection
+│           ├── UI/           # Menu bar, settings window
+│           ├── Stats/        # Word count, WPM, logging
+│           └── Storage/      # Persistence, settings
+├── DictatorMobile/           # iOS app (Xcode project)
+│   ├── DictatorApp/          # Main app target
+│   ├── DictatorKeyboard/     # Keyboard extension target
+│   └── Shared/               # App Groups shared code
+└── dictator-android/         # Android app (Gradle project)
+    └── app/src/main/
+        ├── java/.../         # Kotlin source
+        └── res/              # Resources
 ```
 
 ## Reference Implementations
