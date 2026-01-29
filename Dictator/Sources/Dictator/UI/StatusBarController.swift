@@ -370,6 +370,9 @@ final class StatusBarController {
         switch state {
         case .idle:
             setIconState(.idle)
+        case .starting:
+            // Starting is similar to recording (async setup in progress)
+            setIconState(.recording)
         case .recording:
             setIconState(.recording)
         case .transcribing:

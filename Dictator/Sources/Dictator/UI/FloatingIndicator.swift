@@ -100,6 +100,9 @@ final class FloatingIndicatorController {
     private var recordingService: RecordingService?
     private var cancellables = Set<AnyCancellable>()
 
+    /// Flag to track if hide animation is in progress
+    private var isHideAnimationInProgress = false
+
     func setup(recordingService: RecordingService) {
         self.recordingService = recordingService
 
@@ -108,7 +111,8 @@ final class FloatingIndicatorController {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] state in
                 switch state {
-                case .recording:
+                case .starting, .recording:
+                    // Show badge during startup (async setup) and recording
                     self?.show()
                 default:
                     self?.hide()
@@ -138,7 +142,22 @@ final class FloatingIndicatorController {
     }
 
     private func show() {
-        guard panel == nil, let recordingService = recordingService else { return }
+        guard let recordingService = recordingService else { return }
+
+        // If hide animation is in progress, cancel it and reuse the panel
+        if isHideAnimationInProgress, let existingPanel = panel {
+            print("[FloatingIndicator] Cancelling hide animation - reusing panel")
+            isHideAnimationInProgress = false
+            // Cancel animation by setting final value immediately
+            existingPanel.animator().alphaValue = 1
+            existingPanel.alphaValue = 1
+            return
+        }
+
+        // If panel already exists and visible, nothing to do
+        if panel != nil {
+            return
+        }
 
         let panel = createPanel()
         self.panel = panel
@@ -180,15 +199,28 @@ final class FloatingIndicatorController {
     private func hide() {
         guard let panel = panel else { return }
 
+        // If already hiding, don't start another animation
+        if isHideAnimationInProgress {
+            return
+        }
+
+        isHideAnimationInProgress = true
+
         // Fade out
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.2
             context.timingFunction = CAMediaTimingFunction(name: .easeIn)
             panel.animator().alphaValue = 0
         }, completionHandler: { [weak self] in
-            panel.orderOut(nil)
-            self?.panel = nil
-            self?.hostingView = nil
+            guard let self = self else { return }
+
+            // Only complete the hide if animation wasn't cancelled
+            if self.isHideAnimationInProgress {
+                panel.orderOut(nil)
+                self.panel = nil
+                self.hostingView = nil
+                self.isHideAnimationInProgress = false
+            }
         })
     }
 }

@@ -9,6 +9,7 @@ final class RecordingService: ObservableObject {
 
     enum State {
         case idle
+        case starting      // Transitional state: preparing to record (async setup in progress)
         case recording
         case transcribing
         case processing
@@ -35,6 +36,9 @@ final class RecordingService: ObservableObject {
     private let soundEffectService = SoundEffectService.shared
     private let notificationService = NotificationService.shared
     private var isInitialized = false
+
+    /// Flag to track if stop was requested while in .starting state
+    private var stopRequestedDuringStartup = false
 
     /// Callback when transcription completes (called after text injection)
     /// Parameters: (raw text, processed text, duration, was LLM processed)
@@ -139,6 +143,13 @@ final class RecordingService: ObservableObject {
     }
 
     private func cancelRecording() {
+        // Handle cancel during .starting state
+        if case .starting = state {
+            print("[RecordingService] Cancel requested during startup - deferring as stop")
+            stopRequestedDuringStartup = true
+            return
+        }
+
         guard case .recording = state else {
             print("[RecordingService] Cannot cancel - not recording (current state: \(state))")
             return
@@ -175,6 +186,11 @@ final class RecordingService: ObservableObject {
             return
         }
 
+        // Set state SYNCHRONOUSLY to prevent race conditions with rapid key presses
+        state = .starting
+        stopRequestedDuringStartup = false
+        print("[RecordingService] State set to .starting")
+
         // Start streaming transcription in background
         Task {
             do {
@@ -194,8 +210,18 @@ final class RecordingService: ObservableObject {
                     }
                 }
 
-                // Now start recording
+                // Now start recording - but check if stop was requested during startup
                 await MainActor.run {
+                    if self.stopRequestedDuringStartup {
+                        // Stop was requested while we were starting up - go back to idle
+                        print("[RecordingService] Stop was requested during startup - aborting")
+                        self.audioRecorder.onAudioBuffer = nil
+                        Task { await self.transcriptionService.cancelStreaming() }
+                        self.state = .idle
+                        self.stopRequestedDuringStartup = false
+                        return
+                    }
+
                     self.audioRecorder.startRecording()
                     self.state = .recording
                     self.soundEffectService.playRecordingStart()
@@ -203,6 +229,7 @@ final class RecordingService: ObservableObject {
                 }
             } catch {
                 await MainActor.run {
+                    self.stopRequestedDuringStartup = false
                     let errorMsg = "Failed to start: \(error.localizedDescription)"
                     self.state = .error(errorMsg)
                     self.notificationService.showError(message: errorMsg)
@@ -213,6 +240,13 @@ final class RecordingService: ObservableObject {
     }
 
     private func stopRecording() {
+        // Handle stop request during .starting state (async setup in progress)
+        if case .starting = state {
+            print("[RecordingService] Stop requested during startup - deferring")
+            stopRequestedDuringStartup = true
+            return
+        }
+
         guard case .recording = state else {
             print("[RecordingService] Cannot stop recording - not recording (current state: \(state))")
             return
