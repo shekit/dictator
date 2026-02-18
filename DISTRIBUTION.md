@@ -1,21 +1,19 @@
 # Dictator - Distribution Guide
 
-This guide explains how to package and distribute Dictator to your friends.
+How to package and distribute Dictator.
 
 ## Quick Start
-
-Run the packaging script:
 
 ```bash
 cd Dictator
 ./package-for-distribution.sh
 ```
 
-This creates two files in the `dist/` folder:
-- **Dictator-v1.0.0.dmg** - Drag-and-drop installer (recommended)
-- **Dictator-v1.0.0.zip** - Direct app bundle archive
+This creates two files in `dist/`:
+- **Dictator-v1.0.0.dmg** — Drag-and-drop installer (recommended)
+- **Dictator-v1.0.0.zip** — Direct app bundle archive
 
-To produce a signed + notarized DMG (recommended), configure:
+For a signed + notarized build:
 
 ```bash
 export DICTATOR_CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)"
@@ -25,64 +23,23 @@ export DICTATOR_NOTARY_PROFILE="dictator-notary"
 
 You can also store these in `Dictator/signing.local.env` (gitignored).
 
-## Distribution Options
+## Sharing
 
-### Option 1: DMG File (Recommended)
+Share the DMG or ZIP via email, cloud storage (Dropbox, Google Drive, iCloud), file sharing services, or GitHub Releases.
 
-The DMG provides a nice installation experience:
-1. Double-click to open
-2. Drag Dictator to Applications folder
-3. Eject the DMG
+If the build is unsigned, recipients will need to right-click and choose **Open** on first launch (see README for details).
 
-Share the DMG file via:
-- Email (if under 25MB)
-- Cloud storage (Dropbox, Google Drive, iCloud)
-- File sharing services (WeTransfer, Send)
-- GitHub Releases
+## Signing + Notarization
 
-### Option 2: ZIP File
+To avoid the Gatekeeper security warning:
 
-Alternative for simpler distribution:
-1. Unzip the file
-2. Move Dictator.app to Applications
-3. Launch from Applications
-
-## Important: First Launch
-
-If the DMG is signed and notarized, users should usually be able to open it normally.
-
-If you distribute an unsigned or unnotarized build, users may see:
-**"Dictator cannot be opened because it is from an unidentified developer"**
-
-### How to Open:
-
-1. **Right-click** (or Control-click) on Dictator.app
-2. Select **"Open"** from the menu
-3. Click **"Open"** in the security dialog
-4. This only needs to be done once
-
-Alternatively, they can:
-1. Go to **System Settings > Privacy & Security**
-2. Scroll to the Security section
-3. Click **"Open Anyway"** next to the Dictator message
-
-## System Requirements
-
-- macOS 14.0 (Sonoma) or later
-- Apple Silicon Mac (M1/M2/M3)
-- Approximately 500MB free disk space (for ASR models)
-
-## Signing + Notarization (Recommended)
-
-If you want to avoid the security warning, you can sign the app with an Apple Developer certificate:
-
-### Step 1: Get a Developer Certificate
+### 1. Get a Developer Certificate
 
 1. Enroll in [Apple Developer Program](https://developer.apple.com/programs/) ($99/year)
 2. Create a **Developer ID Application** certificate in Xcode
 3. Install the certificate on your Mac
 
-### Step 2: Create notary profile on your Mac
+### 2. Create notary profile
 
 ```bash
 xcrun notarytool store-credentials "dictator-notary" \
@@ -91,7 +48,7 @@ xcrun notarytool store-credentials "dictator-notary" \
   --password "xxxx-xxxx-xxxx-xxxx"
 ```
 
-### Step 3: Run packaging with signing/notary config
+### 3. Run packaging with signing config
 
 ```bash
 export DICTATOR_CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)"
@@ -99,88 +56,31 @@ export DICTATOR_NOTARY_PROFILE="dictator-notary"
 ./package-for-distribution.sh
 ```
 
-The script will:
-- Sign `Dictator.app`
-- Build DMG/ZIP
-- Submit DMG for notarization
-- Staple and validate the DMG ticket
+The script will sign the app, build DMG/ZIP, submit for notarization, and staple the ticket.
 
 ## Distribution Checklist
 
-Before sharing:
+- [ ] Test on a clean Mac (or new user account)
+- [ ] Verify onboarding flow and permissions
+- [ ] Include install instructions (link to README)
 
-- [ ] Test the app on a clean Mac (or create a new user account)
-- [ ] Verify onboarding flow works correctly
-- [ ] Check that permissions are requested properly
-- [ ] Include installation instructions
-- [ ] Warn about first-launch security dialog
-
-## File Sizes
-
-Typical distribution sizes:
-- App bundle: ~10-15MB
-- ZIP file: ~8-12MB
-- DMG file: ~10-14MB
-
-After installation:
-- App: ~10-15MB
-- ASR models (first run): ~450MB in `~/Library/Application Support/FluidAudio/`
-- Logs: ~1-5MB in `~/Library/Application Support/Dictator/`
-
-## Support & Updates
-
-When distributing updates:
+## Updates
 
 1. Increment version in the script (`VERSION="1.0.1"`)
 2. Rebuild and redistribute
-3. Users should quit the old version before installing new one
-4. Settings and history are preserved (stored in UserDefaults)
+3. Users quit old version before installing new one
+4. Settings and history are preserved across updates
 
-## Privacy & Data
+## Alternative: TestFlight
 
-Inform your friends:
-- All voice processing happens locally (on-device ASR)
-- API key is stored locally in UserDefaults
-- Transcription logs are stored locally in Application Support
-- No data is sent anywhere except OpenRouter/Ollama if LLM mode is enabled
-- No analytics or telemetry
-
-## Troubleshooting
-
-### "App is damaged and can't be opened"
-
-This happens if the app was quarantined by macOS. Fix:
-
-```bash
-xattr -cr /Applications/Dictator.app
-```
-
-### Permissions not working
-
-Reset permissions:
-
-```bash
-tccutil reset Microphone com.dictator.app
-tccutil reset Accessibility com.dictator.app
-```
-
-### App won't launch
-
-Check Console.app for error messages, look for "Dictator" in the log.
-
-## Alternative: TestFlight (Beta Testing)
-
-For easier distribution without code signing warnings:
+For easier beta distribution without Gatekeeper warnings:
 
 1. Upload to App Store Connect
-2. Add friends as beta testers
-3. They install via TestFlight app
-4. No security warnings, automatic updates
+2. Add testers
+3. They install via TestFlight
 
-Note: Requires Apple Developer Program membership.
+Requires Apple Developer Program membership.
 
-## Questions?
+## Reference
 
-For issues or questions about distribution, check:
-- [Apple's Gatekeeper documentation](https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution)
-- [Swift Package Manager docs](https://swift.org/package-manager/)
+- [Apple Notarization docs](https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution)
