@@ -4,7 +4,7 @@ Free, local and private dictation app for macOS. Go from 40 WPM typing to 150+.
 
 Hold `fn`, speak, release - text appears at your cursor. 
 
-Optionally enable AI post-processing to strip filler words, fix spelling, and add punctuation.
+Optionally enable AI post-processing to strip filler words, fix spelling, use custom words and add punctuation.
 
 ## Requirements
 
