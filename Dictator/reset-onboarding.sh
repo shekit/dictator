@@ -31,12 +31,12 @@ killall Dictator 2>/dev/null || true
 
 # Reset permissions
 echo "  Resetting permissions..."
-tccutil reset Microphone com.dictator.app 2>/dev/null || echo "    (Microphone permission not set)"
-tccutil reset Accessibility com.dictator.app 2>/dev/null || echo "    (Accessibility permission not set)"
+tccutil reset Microphone it.shek.dictator 2>/dev/null || echo "    (Microphone permission not set)"
+tccutil reset Accessibility it.shek.dictator 2>/dev/null || echo "    (Accessibility permission not set)"
 
 # Clear all UserDefaults
 echo "  Clearing UserDefaults..."
-defaults delete com.dictator.app 2>/dev/null || echo "    (No UserDefaults found)"
+defaults delete it.shek.dictator 2>/dev/null || echo "    (No UserDefaults found)"
 
 # Conditionally clear FluidAudio models
 if [ "$CLEAR_MODELS" = true ]; then
