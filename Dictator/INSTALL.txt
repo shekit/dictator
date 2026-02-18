@@ -23,7 +23,7 @@ FIRST LAUNCH:
   - These are required for dictation to work
 
   IMPORTANT - Model Download:
-  - During onboarding, voice recognition models (~200MB) will download
+  - During onboarding, voice recognition models (~450MB) will download
   - This happens as part of the setup process with a progress bar
   - Takes 2-5 minutes depending on internet speed
   - Internet connection required for first setup
@@ -36,6 +36,7 @@ REQUIREMENTS:
 
 FEATURES:
   - Hold fn key, speak, release to dictate
+  - fn+space starts hands-free mode, space stops recording
   - Optional LLM cleanup (Cloud or Local via Ollama)
   - Stats tracking, transcription history
   - Custom dictionary for technical terms

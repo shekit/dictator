@@ -104,14 +104,11 @@ dictator/
 │           ├── UI/           # Menu bar, settings window
 │           ├── Stats/        # Word count, WPM, logging
 │           └── Storage/      # Persistence, settings
-├── DictatorMobile/           # iOS app (Xcode project)
-│   ├── DictatorApp/          # Main app target
-│   ├── DictatorKeyboard/     # Keyboard extension target
-│   └── Shared/               # App Groups shared code
-└── dictator-android/         # Android app (Gradle project)
-    └── app/src/main/
-        ├── java/.../         # Kotlin source
-        └── res/              # Resources
+├── FluidAudio-main/          # Reference repo (ignored by git)
+├── FluidVoice-main/          # Reference repo (ignored by git)
+├── Starling-main/            # Reference repo (ignored by git)
+├── tambourine-voice-main/    # Reference repo (ignored by git)
+└── voquill-main/             # Reference repo (ignored by git)
 ```
 
 ## Reference Implementations
@@ -125,17 +122,17 @@ If stuck on implementation patterns, consult these sibling folders:
 | `../starling-main` | Simple Swift menu bar app, text injection patterns |
 | `../tambourine-voice-main` | 3-section prompt system, Ollama/OpenRouter integration |
 
-## Environment Variables
+## Runtime Configuration
 
-All API keys and configuration are stored in `.env` file (never commit this file).
+Configuration is stored in `UserDefaults` and set through onboarding/settings UI.
 
-```bash
-# .env
-OPENROUTER_API_KEY=sk-or-...      # Required for cloud mode
-OLLAMA_HOST=http://localhost:11434 # Optional, defaults to localhost:11434
-```
-
-Load these in the app at startup. See `.env.example` for template.
+Key entries used by the app:
+- `openRouterAPIKey` (for cloud mode)
+- `llm.processingMode`
+- `llm.selectedCloudModel`
+- `llm.selectedLocalModel`
+- `llm.advancedPromptEnabled`
+- `llm.customMainPrompt`
 
 ## Key Implementation Notes
 
@@ -160,9 +157,9 @@ POST http://localhost:11434/api/generate
 ### OpenRouter API (Cloud)
 ```
 POST https://openrouter.ai/api/v1/chat/completions
-Authorization: Bearer $OPENROUTER_API_KEY
+Authorization: Bearer <openRouterAPIKey from app settings>
 {
-  "model": "groq/llama-3.1-70b-versatile",
+  "model": "meta-llama/llama-3.3-70b-instruct",
   "messages": [...]
 }
 ```

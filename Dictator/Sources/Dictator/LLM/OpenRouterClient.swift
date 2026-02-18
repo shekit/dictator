@@ -17,7 +17,7 @@ actor OpenRouterClient {
         var errorDescription: String? {
             switch self {
             case .noAPIKey:
-                return "OpenRouter API key not configured. Add OPENROUTER_API_KEY to .env file."
+                return "OpenRouter API key not configured. Add it in Dictator Settings."
             case .invalidResponse:
                 return "Invalid response from OpenRouter API"
             case .httpError(let code, let message):

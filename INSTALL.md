@@ -64,7 +64,12 @@ Dictator will guide you through setup:
 - Add your OpenRouter API key for AI cleanup
 - Or skip to use raw transcription only
 
-### Step 5: Done!
+### Step 5: Model Download
+- Dictator downloads local speech models on first setup
+- Required before dictation can start
+- Usually takes 2-5 minutes depending on connection speed
+
+### Step 6: Done!
 - You're ready to use Dictator
 
 ## Usage
@@ -81,9 +86,9 @@ Dictator will guide you through setup:
 Click the microphone icon in your menu bar to access:
 - **Today's stats** (words, WPM)
 - **Processing mode** (Cloud/Local/Off)
-- **Model selection**
+- **Mode availability status** (API key / Ollama connection)
 - **Settings window**
-- **About**
+- **Complete Setup** (only shown if onboarding isn't finished)
 
 ### Settings Window
 
@@ -153,6 +158,7 @@ Cost: ~$0.001-0.01 per transcription (very cheap!)
 ### Keyboard Shortcuts
 - **fn (hold)**: Start/stop recording
 - **fn + any key**: Cancel recording
+- **fn + space**: Start/stop hands-free recording mode
 - **⌘ ,**: Open Settings
 - **⌘ Q**: Quit Dictator
 
@@ -193,6 +199,7 @@ Dictator stores files in these locations:
 - **Settings**: `~/Library/Preferences/com.dictator.app.plist`
 - **ASR Models**: `~/Library/Application Support/FluidAudio/Models/` (~450MB)
 - **Transcription Logs**: `~/Library/Application Support/Dictator/transcriptions.jsonl`
+- **Daily Stats**: Stored in `UserDefaults` (`dictator.stats.daily`)
 
 ## Uninstalling
 

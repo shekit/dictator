@@ -1,8 +1,9 @@
 #!/bin/bash
-# Package Dictator for distribution to friends
-# Creates both a DMG and ZIP file for easy sharing
+# Package Dictator for distribution.
+# Creates both DMG and ZIP. If signing/notary settings are provided,
+# signs the app and notarizes/staples the DMG.
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BUILD_DIR="$SCRIPT_DIR/.build/release"
@@ -10,6 +11,75 @@ APP_NAME="Dictator"
 APP_BUNDLE="$SCRIPT_DIR/$APP_NAME.app"
 VERSION="1.0.0"
 DIST_DIR="$SCRIPT_DIR/dist"
+LOCAL_SIGNING_CONFIG="$SCRIPT_DIR/signing.local.env"
+
+# Optional runtime config (do NOT commit secrets)
+# Supports:
+#   DICTATOR_CODESIGN_IDENTITY="Developer ID Application: ... (TEAMID)"
+#   DICTATOR_NOTARY_PROFILE="dictator-notary"
+if [ -f "$LOCAL_SIGNING_CONFIG" ]; then
+    set -a
+    # shellcheck source=/dev/null
+    source "$LOCAL_SIGNING_CONFIG"
+    set +a
+fi
+
+CODESIGN_IDENTITY="${DICTATOR_CODESIGN_IDENTITY:-}"
+NOTARY_PROFILE="${DICTATOR_NOTARY_PROFILE:-}"
+
+usage() {
+    cat <<EOF
+Usage: ./package-for-distribution.sh [options]
+
+Options:
+  --sign-identity "<identity>"   Override code signing identity
+  --notary-profile "<profile>"   Override notarytool keychain profile
+  --skip-sign                    Skip code signing
+  --skip-notarize                Skip notarization/stapling
+  -h, --help                     Show this help
+
+Config from env (or $LOCAL_SIGNING_CONFIG):
+  DICTATOR_CODESIGN_IDENTITY
+  DICTATOR_NOTARY_PROFILE
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --sign-identity)
+            [ $# -ge 2 ] || { echo "Missing value for --sign-identity"; exit 1; }
+            CODESIGN_IDENTITY="$2"
+            shift 2
+            ;;
+        --notary-profile)
+            [ $# -ge 2 ] || { echo "Missing value for --notary-profile"; exit 1; }
+            NOTARY_PROFILE="$2"
+            shift 2
+            ;;
+        --skip-sign)
+            CODESIGN_IDENTITY=""
+            shift
+            ;;
+        --skip-notarize)
+            NOTARY_PROFILE=""
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            usage
+            exit 1
+            ;;
+    esac
+done
+
+if [ -n "$NOTARY_PROFILE" ] && [ -z "$CODESIGN_IDENTITY" ]; then
+    echo "⚠️  Notarization requested without signing identity."
+    echo "   DMG notarization is likely to fail unless app is already properly signed."
+fi
 
 echo "🚀 Packaging $APP_NAME v$VERSION for distribution..."
 echo ""
@@ -45,12 +115,18 @@ echo -n "APPL????" > "$APP_BUNDLE/Contents/PkgInfo"
 echo "✅ App bundle created at: $APP_BUNDLE"
 echo ""
 
-# Step 3: Code signing (optional)
-# Uncomment the following lines if you have a Developer ID certificate
-# echo "🔐 Code signing..."
-# codesign --force --deep --sign "Developer ID Application: Your Name" "$APP_BUNDLE"
-# echo "✅ App signed"
-# echo ""
+# Step 3: Code signing (optional, recommended)
+if [ -n "$CODESIGN_IDENTITY" ]; then
+    echo "🔐 Code signing app..."
+    echo "   Identity: $CODESIGN_IDENTITY"
+    codesign --force --deep --options runtime --timestamp --sign "$CODESIGN_IDENTITY" "$APP_BUNDLE"
+    codesign --verify --deep --strict --verbose=2 "$APP_BUNDLE"
+    echo "✅ App signed and verified"
+    echo ""
+else
+    echo "⚠️  Skipping code signing (no identity configured)"
+    echo ""
+fi
 
 # Step 4: Create distribution directory
 echo "📁 Creating distribution directory..."
@@ -60,8 +136,9 @@ mkdir -p "$DIST_DIR"
 # Step 5: Create ZIP file
 echo "📦 Creating ZIP archive..."
 cd "$SCRIPT_DIR"
-ditto -c -k --keepParent "$APP_BUNDLE" "$DIST_DIR/$APP_NAME-v$VERSION.zip"
-echo "✅ ZIP created: $DIST_DIR/$APP_NAME-v$VERSION.zip"
+ZIP_FILE="$DIST_DIR/$APP_NAME-v$VERSION.zip"
+ditto -c -k --keepParent "$APP_BUNDLE" "$ZIP_FILE"
+echo "✅ ZIP created: $ZIP_FILE"
 echo ""
 
 # Step 6: Create DMG file
@@ -79,8 +156,7 @@ if [ -d "/Volumes/$APP_NAME" ]; then
 fi
 
 # Only detach images that match our specific dist directory paths
-hdiutil info | grep "$DIST_DIR" | grep "image-path" | sed 's/.*image-path[[:space:]]*:[[:space:]]*//' | while read image_path; do
-    # Get the device node for this specific image
+hdiutil info | grep "$DIST_DIR" | grep "image-path" | sed 's/.*image-path[[:space:]]*:[[:space:]]*//' | while read -r image_path; do
     STALE_DEV=$(hdiutil info | grep -B 10 "image-path.*$image_path" | grep "^/dev/" | head -1 | awk '{print $1}')
     if [ -n "$STALE_DEV" ]; then
         echo "  Detaching $STALE_DEV (from $image_path)..."
@@ -88,9 +164,7 @@ hdiutil info | grep "$DIST_DIR" | grep "image-path" | sed 's/.*image-path[[:spac
     fi
 done
 
-# Remove old temp.dmg if it exists
 rm -f "$DMG_TEMP"
-
 sleep 1
 
 # Create temporary DMG (with extra space for filesystem overhead)
@@ -117,7 +191,7 @@ Dictator - Voice-to-Text with AI Cleanup
 Installation:
 1. Drag Dictator.app to the Applications folder
 2. Open Dictator from Applications
-3. Follow the onboarding to grant permissions
+3. Follow onboarding to grant permissions
 
 Requirements:
 - macOS 14.0 (Sonoma) or later
@@ -127,11 +201,8 @@ Usage:
 - Hold fn key, speak, release
 - Text appears at your cursor
 - Configure in menu bar settings
-
-For more info: https://github.com/yourusername/dictator
 EOF
 
-# Force sync to ensure all writes are flushed
 sync
 echo "⏳ Flushing writes to disk..."
 sleep 2
@@ -157,15 +228,29 @@ for i in $(seq 1 $RETRIES); do
     fi
 done
 
-# Convert to compressed DMG
 hdiutil convert "$DMG_TEMP" -format UDZO -o "$DMG_FINAL"
 rm "$DMG_TEMP"
 
 echo "✅ DMG created: $DMG_FINAL"
 echo ""
 
-# Step 7: Calculate file sizes
-ZIP_SIZE=$(du -h "$DIST_DIR/$APP_NAME-v$VERSION.zip" | cut -f1)
+# Step 7: Notarize + staple DMG (optional, recommended)
+if [ -n "$NOTARY_PROFILE" ]; then
+    echo "📝 Submitting DMG for notarization..."
+    echo "   Profile: $NOTARY_PROFILE"
+    xcrun notarytool submit "$DMG_FINAL" --keychain-profile "$NOTARY_PROFILE" --wait
+    echo "📎 Stapling notarization ticket..."
+    xcrun stapler staple "$DMG_FINAL"
+    xcrun stapler validate "$DMG_FINAL"
+    echo "✅ DMG notarized and stapled"
+    echo ""
+else
+    echo "⚠️  Skipping notarization (no notary profile configured)"
+    echo ""
+fi
+
+# Step 8: Calculate file sizes
+ZIP_SIZE=$(du -h "$ZIP_FILE" | cut -f1)
 DMG_SIZE=$(du -h "$DMG_FINAL" | cut -f1)
 
 # Summary
@@ -174,15 +259,14 @@ echo "✨ Distribution packages ready!"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 echo "📦 ZIP Archive ($ZIP_SIZE):"
-echo "   $DIST_DIR/$APP_NAME-v$VERSION.zip"
+echo "   $ZIP_FILE"
 echo ""
 echo "💿 DMG Image ($DMG_SIZE):"
 echo "   $DMG_FINAL"
 echo ""
-echo "📤 Share these files with your friends!"
-echo ""
-echo "⚠️  Note: Apps distributed outside the App Store may show"
-echo "   a security warning. Recipients should:"
-echo "   1. Right-click the app → Open (first time only)"
-echo "   2. Click 'Open' in the security dialog"
+if [ -n "$NOTARY_PROFILE" ]; then
+    echo "✅ DMG is signed, notarized, and stapled."
+else
+    echo "⚠️  DMG is not notarized. Recipients may see Gatekeeper warnings."
+fi
 echo ""

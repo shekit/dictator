@@ -577,6 +577,38 @@ Phase 9 (Polish) - Menu bar UX improvements complete
 
 ### Build Status:
 ✅ Build successful
+
+---
+
+## Session: 2026-02-18 - Backfill + Source-of-Truth Cleanup
+
+### Backfilled Changes (not previously captured in this log):
+1. **Mobile roadmap expansion committed (2026-01-26)**
+   - Added iOS/Android architecture and mobile phase tracking.
+   - Expanded `features.json` from macOS-only scope to 18 phases total.
+   - Current tracker state: macOS complete, mobile phases pending.
+
+2. **Rapid hotkey race-condition fix committed (2026-01-29)**
+   - Added `starting` transitional state in `RecordingService` to prevent stuck recording/timer behavior on rapid key transitions.
+   - Added deferred stop/cancel handling during async startup.
+   - Fixed floating indicator animation race so show/hide transitions do not leave stale UI state.
+
+### Current Session Cleanup (docs and stale artifacts):
+1. **Documentation synchronized to code as source of truth**
+   - Updated `ARCHITECTURE.md` for current hotkeys, streaming STT flow, onboarding steps, menu behavior, and storage locations.
+   - Updated `INSTALL.md` and `Dictator/INSTALL.txt` for model download size/step and hands-free shortcut behavior.
+   - Updated `CLAUDE.md` to reflect runtime `UserDefaults` configuration and current cloud model default.
+
+2. **Removed unsupported/stale configuration artifacts**
+   - Removed `.env.example` (not used by runtime code).
+   - Updated OpenRouter missing-key error message to direct users to Settings instead of `.env`.
+
+3. **Removed unused dead code**
+   - Deleted unused `KeychainManager.swift`.
+   - Deleted unused `AboutWindow.swift`.
+
+### Notes
+- This entry consolidates previously unlogged historical changes plus this repository cleanup in a single update, per request.
 ✅ Committed: 9e01415
 
 ### Usage:
@@ -656,4 +688,3 @@ Phase 9 (Polish) - Menu bar UX improvements complete
 
 ### Build Status:
 ✅ Build successful
-

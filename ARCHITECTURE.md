@@ -2,141 +2,106 @@
 
 ## What It Does
 
-Hold a hotkey → speak → release → cleaned text appears at your cursor.
+Hold `fn` to record, speak, release, and Dictator inserts text at your cursor.
 
-## Flow
+It supports:
+- Push-to-talk: hold `fn`, release to finish
+- Hands-free: press `fn + space` to start, press `space` to stop
+- Optional LLM cleanup before insertion (Cloud/OpenRouter, Local/Ollama, or Off)
+
+## Runtime Flow
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                                                                         │
-│   Hold Hotkey ──→ Record Audio ──→ Release ──→ FluidAudio STT          │
-│                                                     │                   │
-│                                                     ▼                   │
-│                                              Raw Transcription          │
-│                                                     │                   │
-│                                         [LLM Cleanup Enabled?]          │
-│                                           /              \              │
-│                                         NO               YES            │
-│                                          │                │             │
-│                                          │    ┌──────────┴──────────┐  │
-│                                          │    │                     │  │
-│                                          │  [Local]             [Cloud] │
-│                                          │    │                     │  │
-│                                          │    ▼                     ▼  │
-│                                          │  Ollama            OpenRouter│
-│                                          │    │                     │  │
-│                                          │    └──────────┬──────────┘  │
-│                                          │               │              │
-│                                          │               ▼              │
-│                                          │        Cleaned Text          │
-│                                          │               │              │
-│                                          └───────┬───────┘              │
-│                                                  │                      │
-│                                                  ▼                      │
-│                                      Clipboard + Cmd+V Paste            │
-│                                                  │                      │
-│                                                  ▼                      │
-│                                           Text at Cursor                │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
+fn/space hotkey
+    -> AudioRecorder (AVAudioEngine, 16kHz mono conversion)
+    -> Streaming STT (FluidAudio StreamingAsrManager)
+    -> Final transcription on stop
+    -> Optional LLM cleanup (OpenRouter or Ollama)
+    -> TextInjectionService (PID unicode -> AX API -> clipboard fallback)
+    -> Text appears in focused app
+    -> Stats + JSONL history logged
 ```
 
-## Components
+## Core Components
 
-### 1. Menu Bar App
-- Lives in system tray
-- Shows recording state
-- Quick toggle: Local ↔ Cloud mode
-- Stats: words today, WPM
-- Opens settings window
+### App lifecycle
+- `AppDelegate` wires menu bar UI, onboarding, services, and shutdown.
+- Services initialize after onboarding completes.
 
-### 2. Audio Recording
-- Global hotkey: hold-to-record (Ctrl+Option+Space)
-- AVAudioEngine for capture
-- Microphone permission handling
+### Recording & hotkeys
+- `GlobalHotkeyManager` uses CGEvent tap with health monitoring.
+- `RecordingService` is the orchestration layer and state machine:
+  - `idle`, `starting`, `recording`, `transcribing`, `processing`, `injecting`, `error`
+- Handles race conditions during rapid key transitions.
 
-### 3. Speech-to-Text
-- FluidAudio with Parakeet model
-- Runs on Apple Neural Engine
-- ~200ms latency, fully local
+### Speech-to-text (local)
+- `TranscriptionService` uses FluidAudio and loads v2 Parakeet models.
+- Streaming STT runs during recording; finalization happens on stop.
+- FluidAudio calls are serialized for safety.
 
-### 4. LLM Text Processing
+### LLM cleanup
+- `LLMService` supports three modes:
+  - `off` (raw text)
+  - `local` (Ollama)
+  - `cloud` (OpenRouter)
+- Prompt construction has:
+  - Main prompt
+  - Optional advanced correction rules
+  - Optional dictionary replacements
 
-**Three-section prompt system:**
+### Text injection
+- `TextInjectionService` attempts insertion strategies in order:
+  1. Unicode CGEvent to focused PID
+  2. Accessibility text insertion
+  3. Clipboard + Cmd+V fallback (with clipboard restore)
 
-| Section | Purpose | Example |
-|---------|---------|---------|
-| Main | Filler removal, punctuation | "um hello" → "Hello." |
-| Advanced | Backtrack handling | "wait no actually hi" → "Hi." |
-| Dictionary | Custom terms | "ant row pic" → "Anthropic" |
+### UI
+- Menu bar icon reflects runtime state.
+- Menu includes today stats, LLM mode choices, conditional `Complete Setup...`, Settings, and Quit.
+- Settings window tabs:
+  - Prompts
+  - Dictionary
+  - History
+  - Stats
+  - Settings (API key, mode, models, launch at login)
+- Floating recording indicator appears above dock during `starting/recording`.
 
-**Two modes:**
-- **Local:** Ollama (fully offline)
-- **Cloud:** OpenRouter → Groq/Claude/GPT
+## Onboarding
 
-### 5. Text Injection
-- Clipboard + Cmd+V simulation
-- Works in any app
-- Preserves original clipboard
+First run onboarding steps:
+1. Welcome
+2. Accessibility permission
+3. Microphone permission
+4. Optional OpenRouter API key
+5. Model download progress
+6. Done
 
-### 6. Stats & Logging
-- Word count per transcription
-- WPM (words per minute)
-- Daily aggregates
-- Transcription log file with timestamps
+Progress resumes if interrupted (`currentOnboardingStep`), and completion is tracked with `hasCompletedOnboarding`.
 
-## Data Storage
+## Storage
 
-| Data | Location | Format |
-|------|----------|--------|
-| API Keys & Config | .env (project root) | KEY=value |
-| Settings | UserDefaults | Plist |
-| Stats | ~/Library/Application Support/Dictator/stats.json | JSON |
-| Transcription Log | ~/Documents/Dictator/transcriptions.jsonl | JSON Lines |
-| Prompts | UserDefaults | String |
+| Data | Storage | Notes |
+|------|---------|-------|
+| API key + app settings | UserDefaults | API key key: `openRouterAPIKey` |
+| Prompt/mode/model settings | UserDefaults | Managed by `LLMService` |
+| Daily stats aggregates | UserDefaults | Key: `dictator.stats.daily` |
+| Transcription history log | `~/Library/Application Support/Dictator/transcriptions.jsonl` | JSON Lines |
+| ASR models | `~/Library/Application Support/FluidAudio/Models/` | Downloaded on first setup if not bundled |
 
 ## Dependencies
 
 | Dependency | Purpose |
 |------------|---------|
-| FluidAudio | Speech-to-text (Parakeet on ANE) |
-| None else | Pure Swift/AppKit/SwiftUI |
-
-## UI Structure
-
-```
-Menu Bar
-├── Icon (changes during recording)
-├── Mode Toggle [Local ▼] / [Cloud ▼]
-├── LLM Cleanup [✓ On / Off]
-├── Stats: "Today: 1,234 words | 142 WPM"
-├── ───────────
-├── Settings... → Opens Settings Window
-└── Quit
-
-Settings Window
-├── [Prompts] Tab
-│   ├── Main Prompt (text area)
-│   ├── Advanced Prompt (text area + toggle)
-│   └── Dictionary (text area)
-├── [History] Tab
-│   └── List of past transcriptions
-├── [Settings] Tab
-│   ├── Hotkey configuration
-│   ├── API Key status (loaded from .env)
-│   ├── Local model picker
-│   ├── Cloud model picker
-│   └── Launch at login toggle
-└── [Stats] Tab
-    └── Daily/weekly/all-time stats
-```
+| FluidAudio | On-device ASR + streaming transcription |
+| AppKit/SwiftUI/AVFoundation | Native macOS app, UI, audio capture |
 
 ## Error Handling
 
-| Error | Handling |
+| Error | Behavior |
 |-------|----------|
-| Ollama not running | Show warning, suggest starting Ollama |
-| OpenRouter API error | Show error, fall back gracefully |
-| No microphone permission | Prompt for permission |
-| Empty recording | Ignore, don't process |
-| FluidAudio model missing | Download on first run |
+| Missing microphone permission | Prompt + user-facing error state |
+| Missing accessibility permission | Prompt + open relevant settings pane |
+| OpenRouter errors | Retry where applicable, then fallback to raw text |
+| Ollama unavailable | Warn and offer to start server |
+| Empty/too-short recording | Skip processing/injection safely |
+| Disabled event tap | Auto re-enable via health checks |

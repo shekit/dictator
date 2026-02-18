@@ -15,6 +15,16 @@ This creates two files in the `dist/` folder:
 - **Dictator-v1.0.0.dmg** - Drag-and-drop installer (recommended)
 - **Dictator-v1.0.0.zip** - Direct app bundle archive
 
+To produce a signed + notarized DMG (recommended), configure:
+
+```bash
+export DICTATOR_CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)"
+export DICTATOR_NOTARY_PROFILE="dictator-notary"
+./package-for-distribution.sh
+```
+
+You can also store these in `Dictator/signing.local.env` (gitignored).
+
 ## Distribution Options
 
 ### Option 1: DMG File (Recommended)
@@ -39,8 +49,9 @@ Alternative for simpler distribution:
 
 ## Important: First Launch
 
-Your friends will see a security warning because the app isn't signed with an Apple Developer certificate:
+If the DMG is signed and notarized, users should usually be able to open it normally.
 
+If you distribute an unsigned or unnotarized build, users may see:
 **"Dictator cannot be opened because it is from an unidentified developer"**
 
 ### How to Open:
@@ -61,7 +72,7 @@ Alternatively, they can:
 - Apple Silicon Mac (M1/M2/M3)
 - Approximately 500MB free disk space (for ASR models)
 
-## Optional: Code Signing
+## Signing + Notarization (Recommended)
 
 If you want to avoid the security warning, you can sign the app with an Apple Developer certificate:
 
@@ -71,33 +82,28 @@ If you want to avoid the security warning, you can sign the app with an Apple De
 2. Create a **Developer ID Application** certificate in Xcode
 3. Install the certificate on your Mac
 
-### Step 2: Sign the App
-
-Edit `package-for-distribution.sh` and uncomment these lines:
+### Step 2: Create notary profile on your Mac
 
 ```bash
-echo "🔐 Code signing..."
-codesign --force --deep --sign "Developer ID Application: Your Name" "$APP_BUNDLE"
-echo "✅ App signed"
-```
-
-Replace `"Your Name"` with your certificate name from Keychain Access.
-
-### Step 3: Notarize (Optional)
-
-For macOS 10.15+ without warnings:
-
-```bash
-# Create app-specific password at appleid.apple.com
-xcrun notarytool submit dist/Dictator-v1.0.0.zip \
+xcrun notarytool store-credentials "dictator-notary" \
   --apple-id your@email.com \
-  --password "xxxx-xxxx-xxxx-xxxx" \
   --team-id XXXXXXXXXX \
-  --wait
-
-# Staple the notarization ticket
-xcrun stapler staple Dictator.app
+  --password "xxxx-xxxx-xxxx-xxxx"
 ```
+
+### Step 3: Run packaging with signing/notary config
+
+```bash
+export DICTATOR_CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)"
+export DICTATOR_NOTARY_PROFILE="dictator-notary"
+./package-for-distribution.sh
+```
+
+The script will:
+- Sign `Dictator.app`
+- Build DMG/ZIP
+- Submit DMG for notarization
+- Staple and validate the DMG ticket
 
 ## Distribution Checklist
 

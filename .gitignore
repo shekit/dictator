@@ -13,11 +13,11 @@ FluidVoice-main/
 # ===================
 .env
 .env.*
-!.env.example
 *.pem
 *.key
 secrets/
 credentials.json
+Dictator/signing.local.env
 
 # ===================
 # Claude Code
@@ -98,3 +98,5 @@ logs/
 tmp/
 temp/
 *.tmp
+
+Dictator/.cache

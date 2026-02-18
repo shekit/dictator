@@ -1,7 +1,7 @@
 import Foundation
 
 /// Manages app configuration.
-/// Only uses UserDefaults - no .env file loading to avoid permission prompts.
+/// Uses UserDefaults for app configuration.
 @MainActor
 final class EnvLoader {
     static let shared = EnvLoader()
@@ -12,9 +12,9 @@ final class EnvLoader {
 
     // MARK: - Public Methods
 
-    /// Load configuration (no-op for now, kept for compatibility).
+    /// Load configuration (no-op, kept for compatibility).
     func load() {
-        print("[EnvLoader] Using UserDefaults for configuration (no .env file)")
+        print("[EnvLoader] Using UserDefaults configuration")
     }
 
     /// Get OpenRouter API key from UserDefaults.
