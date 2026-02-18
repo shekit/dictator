@@ -12,6 +12,7 @@ APP_BUNDLE="$SCRIPT_DIR/$APP_NAME.app"
 VERSION="1.0.0"
 DIST_DIR="$SCRIPT_DIR/dist"
 LOCAL_SIGNING_CONFIG="$SCRIPT_DIR/signing.local.env"
+DMG_BACKGROUND_IMAGE="$SCRIPT_DIR/Resources/dmg-background.png"
 
 # Optional runtime config (do NOT commit secrets)
 # Supports:
@@ -26,6 +27,50 @@ fi
 
 CODESIGN_IDENTITY="${DICTATOR_CODESIGN_IDENTITY:-}"
 NOTARY_PROFILE="${DICTATOR_NOTARY_PROFILE:-}"
+
+configure_dmg_finder_layout() {
+    local volume_name="$1"
+    local app_name="$2"
+
+    if ! command -v osascript >/dev/null 2>&1; then
+        echo "⚠️  osascript not available; skipping DMG Finder layout customization"
+        return
+    fi
+
+    osascript <<EOF >/dev/null 2>&1 || {
+tell application "Finder"
+    try
+        tell disk "${volume_name}"
+            open
+            set theWindow to container window
+            set current view of theWindow to icon view
+            set toolbar visible of theWindow to false
+            set statusbar visible of theWindow to false
+            set bounds of theWindow to {140, 140, 820, 560}
+
+            set viewOptions to the icon view options of theWindow
+            set arrangement of viewOptions to not arranged
+            set icon size of viewOptions to 128
+            set text size of viewOptions to 14
+
+            try
+                set position of item "${app_name}.app" of theWindow to {190, 240}
+            on error
+                set position of item "${app_name}" of theWindow to {190, 240}
+            end try
+
+            set position of item "Applications" of theWindow to {510, 240}
+            update without registering applications
+            delay 1
+            close
+            open
+        end tell
+    end try
+end tell
+EOF
+        echo "⚠️  Could not apply Finder layout customization; continuing with default layout"
+    }
+}
 
 usage() {
     cat <<EOF
@@ -119,7 +164,9 @@ echo ""
 if [ -n "$CODESIGN_IDENTITY" ]; then
     echo "🔐 Code signing app..."
     echo "   Identity: $CODESIGN_IDENTITY"
-    codesign --force --deep --options runtime --timestamp --sign "$CODESIGN_IDENTITY" "$APP_BUNDLE"
+    codesign --force --deep --options runtime --timestamp \
+        --entitlements "$SCRIPT_DIR/Dictator.entitlements" \
+        --sign "$CODESIGN_IDENTITY" "$APP_BUNDLE"
     codesign --verify --deep --strict --verbose=2 "$APP_BUNDLE"
     echo "✅ App signed and verified"
     echo ""
@@ -188,72 +235,78 @@ done < <(
     '
 )
 
-rm -f "$DMG_TEMP"
+rm -f "$DMG_TEMP" "$DMG_FINAL"
 sleep 1
 
-# Create temporary DMG (with extra space for filesystem overhead)
-hdiutil create -size 200m -fs HFS+ -volname "$APP_NAME" "$DMG_TEMP"
+if command -v create-dmg >/dev/null 2>&1; then
+    echo "🎨 Using create-dmg for polished installer layout..."
+    CREATE_DMG_ARGS=(
+        --volname "$APP_NAME"
+        --window-pos 120 120
+        --window-size 900 560
+        --icon-size 132
+        --icon "$APP_NAME.app" 220 300
+        --hide-extension "$APP_NAME.app"
+        --app-drop-link 680 300
+    )
 
-# Mount the DMG and capture the device node
-MOUNT_POINT="/Volumes/$APP_NAME"
-echo "📀 Mounting disk image..."
-ATTACH_OUTPUT=$(hdiutil attach "$DMG_TEMP" -mountpoint "$MOUNT_POINT" -nobrowse)
-DEVICE_NODE=$(echo "$ATTACH_OUTPUT" | grep "^/dev/" | head -1 | awk '{print $1}')
-echo "  Mounted at: $MOUNT_POINT ($DEVICE_NODE)"
-
-# Copy app to DMG
-cp -R "$APP_BUNDLE" "$MOUNT_POINT/"
-
-# Create Applications symlink for easy installation
-ln -s /Applications "$MOUNT_POINT/Applications"
-
-# Add README
-cat > "$MOUNT_POINT/README.txt" << EOF
-Dictator - Voice-to-Text with AI Cleanup
-=========================================
-
-Installation:
-1. Drag Dictator.app to the Applications folder
-2. Open Dictator from Applications
-3. Follow onboarding to grant permissions
-
-Requirements:
-- macOS 14.0 (Sonoma) or later
-- Apple Silicon Mac
-
-Usage:
-- Hold fn key, speak, release
-- Text appears at your cursor
-- Configure in menu bar settings
-EOF
-
-sync
-echo "⏳ Flushing writes to disk..."
-sleep 2
-
-# Unmount using the device node (more reliable than mount point)
-echo "📤 Ejecting disk image ($DEVICE_NODE)..."
-RETRIES=5
-for i in $(seq 1 $RETRIES); do
-    if hdiutil detach "$DEVICE_NODE" 2>/dev/null; then
-        echo "✅ Disk image ejected"
-        break
+    if [ -f "$DMG_BACKGROUND_IMAGE" ]; then
+        CREATE_DMG_ARGS+=(--background "$DMG_BACKGROUND_IMAGE")
     else
-        if [ $i -eq $RETRIES ]; then
-            echo "⚠️  Normal eject failed, forcing..."
-            hdiutil detach "$DEVICE_NODE" -force || {
-                echo "❌ Force eject failed. Trying mount point..."
-                hdiutil detach "$MOUNT_POINT" -force || true
-            }
-        else
-            echo "⏳ Retrying eject ($i/$RETRIES)..."
-            sleep 1
-        fi
+        echo "⚠️  DMG background image not found at $DMG_BACKGROUND_IMAGE; using default background"
     fi
-done
 
-hdiutil convert "$DMG_TEMP" -format UDZO -o "$DMG_FINAL"
-rm "$DMG_TEMP"
+    create-dmg "${CREATE_DMG_ARGS[@]}" "$DMG_FINAL" "$APP_BUNDLE"
+else
+    echo "⚠️  create-dmg not found; using basic DMG builder"
+
+    # Create temporary DMG (with extra space for filesystem overhead)
+    hdiutil create -size 200m -fs HFS+ -volname "$APP_NAME" "$DMG_TEMP"
+
+    # Mount the DMG and capture the device node
+    MOUNT_POINT="/Volumes/$APP_NAME"
+    echo "📀 Mounting disk image..."
+    ATTACH_OUTPUT=$(hdiutil attach "$DMG_TEMP" -mountpoint "$MOUNT_POINT" -nobrowse)
+    DEVICE_NODE=$(echo "$ATTACH_OUTPUT" | grep "^/dev/" | head -1 | awk '{print $1}')
+    echo "  Mounted at: $MOUNT_POINT ($DEVICE_NODE)"
+
+    # Copy app to DMG
+    cp -R "$APP_BUNDLE" "$MOUNT_POINT/"
+
+    # Create Applications symlink for easy installation
+    ln -s /Applications "$MOUNT_POINT/Applications"
+
+    # Apply a polished Finder window layout if possible
+    configure_dmg_finder_layout "$APP_NAME" "$APP_NAME"
+
+    sync
+    echo "⏳ Flushing writes to disk..."
+    sleep 2
+
+    # Unmount using the device node (more reliable than mount point)
+    echo "📤 Ejecting disk image ($DEVICE_NODE)..."
+    RETRIES=5
+    for i in $(seq 1 $RETRIES); do
+        if hdiutil detach "$DEVICE_NODE" 2>/dev/null; then
+            echo "✅ Disk image ejected"
+            break
+        else
+            if [ $i -eq $RETRIES ]; then
+                echo "⚠️  Normal eject failed, forcing..."
+                hdiutil detach "$DEVICE_NODE" -force || {
+                    echo "❌ Force eject failed. Trying mount point..."
+                    hdiutil detach "$MOUNT_POINT" -force || true
+                }
+            else
+                echo "⏳ Retrying eject ($i/$RETRIES)..."
+                sleep 1
+            fi
+        fi
+    done
+
+    hdiutil convert "$DMG_TEMP" -format UDZO -o "$DMG_FINAL"
+    rm "$DMG_TEMP"
+fi
 
 echo "✅ DMG created: $DMG_FINAL"
 echo ""
