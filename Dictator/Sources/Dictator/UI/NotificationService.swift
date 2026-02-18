@@ -8,10 +8,6 @@ final class NotificationService {
 
     static let shared = NotificationService()
 
-    // MARK: - Properties
-
-    private var isAuthorized = false
-
     // MARK: - Initialization
 
     private init() {
@@ -23,12 +19,11 @@ final class NotificationService {
     /// Request notification permission (non-blocking).
     func requestAuthorization() {
         let center = UNUserNotificationCenter.current()
-        center.requestAuthorization(options: [.alert, .sound]) { [weak self] granted, error in
-            Task { @MainActor in
-                self?.isAuthorized = granted
-                if let error = error {
-                    print("[NotificationService] Authorization error: \(error)")
-                }
+        center.requestAuthorization(options: [.alert, .sound]) { granted, error in
+            if let error = error {
+                print("[NotificationService] Authorization error: \(error)")
+            } else if !granted {
+                print("[NotificationService] Notification permission denied")
             }
         }
     }
@@ -39,22 +34,6 @@ final class NotificationService {
     ///   - message: Error message
     func showError(title: String = "Dictator Error", message: String) {
         showNotification(title: title, message: message, sound: .defaultCritical)
-    }
-
-    /// Show an info notification.
-    /// - Parameters:
-    ///   - title: Notification title
-    ///   - message: Notification message
-    func showInfo(title: String, message: String) {
-        showNotification(title: title, message: message, sound: .default)
-    }
-
-    /// Show a success notification.
-    /// - Parameters:
-    ///   - title: Notification title
-    ///   - message: Notification message
-    func showSuccess(title: String, message: String) {
-        showNotification(title: title, message: message, sound: nil)
     }
 
     // MARK: - Private Methods

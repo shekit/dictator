@@ -62,9 +62,9 @@ else
     echo "  Install with: brew install ollama"
 fi
 
-# Check for FluidAudio in sibling directory (for reference)
-if [ -d "$SCRIPT_DIR/FluidAudio" ]; then
-    echo "✓ FluidAudio reference available at ../FluidAudio"
+# Check for FluidAudio reference repo in sibling directory (for reference)
+if [ -d "$SCRIPT_DIR/FluidAudio-main" ]; then
+    echo "✓ FluidAudio reference available at ../FluidAudio-main"
 fi
 
 echo ""

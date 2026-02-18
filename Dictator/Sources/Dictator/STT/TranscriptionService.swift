@@ -2,13 +2,6 @@ import Foundation
 import FluidAudio
 import AVFoundation
 
-/// Actor to serialize FluidAudio/CoreML calls (cannot handle concurrent transcriptions)
-private actor TranscriptionExecutor {
-    func run<T>(_ op: @escaping () async throws -> T) async throws -> T {
-        return try await op()
-    }
-}
-
 /// Transcription state for UI updates
 enum TranscriptionState: Equatable {
     case idle
@@ -26,9 +19,7 @@ final class TranscriptionService: ObservableObject {
     @Published private(set) var state: TranscriptionState = .idle
     @Published private(set) var isModelLoaded: Bool = false
 
-    private var asrManager: AsrManager?
     private var loadedModels: AsrModels?
-    private let executor = TranscriptionExecutor()
 
     // Streaming components
     private var streamingManager: StreamingAsrManager?
@@ -66,11 +57,6 @@ final class TranscriptionService: ObservableObject {
             // Store models for streaming use
             self.loadedModels = models
 
-            // Initialize AsrManager (for batch mode fallback)
-            let manager = AsrManager(config: ASRConfig.default)
-            try await manager.initialize(models: models)
-
-            self.asrManager = manager
             self.isModelLoaded = true
             self.state = .idle
 
@@ -95,40 +81,6 @@ final class TranscriptionService: ObservableObject {
     func modelsExistOnDisk() -> Bool {
         let cacheDir = AsrModels.defaultCacheDirectory(for: .v2)
         return AsrModels.modelsExist(at: cacheDir, version: .v2)
-    }
-
-    /// Transcribe audio samples to text
-    /// - Parameter samples: Audio samples at 16kHz sample rate as Float array
-    /// - Returns: Transcribed text, or empty string if transcription fails
-    func transcribe(_ samples: [Float]) async throws -> String {
-        guard let manager = asrManager else {
-            throw TranscriptionError.notInitialized
-        }
-
-        // Handle empty or very short recordings
-        guard samples.count >= 1600 else { // At least 100ms of audio at 16kHz
-            print("[TranscriptionService] Audio too short (\(samples.count) samples), returning empty")
-            return ""
-        }
-
-        state = .transcribing
-        print("[TranscriptionService] Starting transcription of \(samples.count) samples...")
-
-        do {
-            // Serialize FluidAudio calls using the actor
-            let result = try await executor.run {
-                try await manager.transcribe(samples, source: .microphone)
-            }
-
-            state = .idle
-            let text = result.text.trimmingCharacters(in: .whitespacesAndNewlines)
-            print("[TranscriptionService] Transcription complete: '\(text)'")
-            return text
-        } catch {
-            state = .error("Transcription failed: \(error.localizedDescription)")
-            print("[TranscriptionService] Transcription error: \(error)")
-            throw error
-        }
     }
 
     // MARK: - Streaming Transcription
@@ -222,8 +174,6 @@ final class TranscriptionService: ObservableObject {
         Task {
             await cancelStreaming()
         }
-        asrManager?.cleanup()
-        asrManager = nil
         loadedModels = nil
         isModelLoaded = false
         state = .idle

@@ -12,7 +12,6 @@ final class SoundEffectService {
     private enum SystemSound: String {
         case recordingStart = "Tink"      // Subtle click for recording start
         case recordingStop = "Pop"        // Clean pop for recording stop
-        case error = "Basso"              // Deep tone for errors
     }
 
     // MARK: - Properties
@@ -40,16 +39,6 @@ final class SoundEffectService {
     /// Play sound when recording stops.
     func playRecordingStop() {
         playSound(.recordingStop)
-    }
-
-    /// Play sound for errors.
-    func playError() {
-        playSound(.error)
-    }
-
-    /// Toggle sound effects on/off.
-    func setSoundsEnabled(_ enabled: Bool) {
-        UserDefaults.standard.set(enabled, forKey: "soundEffectsEnabled")
     }
 
     // MARK: - Private Methods

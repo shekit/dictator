@@ -58,9 +58,4 @@ else
     fi
 fi
 
-# Optional: Clear transcription logs
-# Uncomment if you want to clear logs too
-# echo "  Clearing transcription logs..."
-# rm -rf ~/Documents/Dictator/transcriptions.log 2>/dev/null || true
-
 echo "✅ Reset complete! Launch Dictator to start fresh onboarding."

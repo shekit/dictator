@@ -156,13 +156,37 @@ if [ -d "/Volumes/$APP_NAME" ]; then
 fi
 
 # Only detach images that match our specific dist directory paths
-hdiutil info | grep "$DIST_DIR" | grep "image-path" | sed 's/.*image-path[[:space:]]*:[[:space:]]*//' | while read -r image_path; do
-    STALE_DEV=$(hdiutil info | grep -B 10 "image-path.*$image_path" | grep "^/dev/" | head -1 | awk '{print $1}')
-    if [ -n "$STALE_DEV" ]; then
-        echo "  Detaching $STALE_DEV (from $image_path)..."
-        hdiutil detach "$STALE_DEV" -force 2>/dev/null || true
-    fi
-done
+HDIUTIL_INFO="$(hdiutil info)"
+while IFS= read -r stale_dev; do
+    [ -n "$stale_dev" ] || continue
+    echo "  Detaching $stale_dev (from previous $APP_NAME packaging run)..."
+    hdiutil detach "$stale_dev" -force 2>/dev/null || true
+done < <(
+    printf '%s\n' "$HDIUTIL_INFO" | awk -v dist="$DIST_DIR" '
+        BEGIN { RS=""; FS="\n" }
+        {
+            dev = ""
+            has_dist_image_path = 0
+
+            for (i = 1; i <= NF; i++) {
+                line = $i
+
+                if (dev == "" && line ~ /^\/dev\//) {
+                    split(line, parts, /[[:space:]]+/)
+                    dev = parts[1]
+                }
+
+                if (index(line, "image-path") && index(line, dist)) {
+                    has_dist_image_path = 1
+                }
+            }
+
+            if (has_dist_image_path && dev != "") {
+                print dev
+            }
+        }
+    '
+)
 
 rm -f "$DMG_TEMP"
 sleep 1

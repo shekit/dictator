@@ -22,7 +22,7 @@ Dictator/signing.local.env
 # ===================
 # Claude Code
 # ===================
-.claude/settings.local.json
+.claude/
 
 # ===================
 # macOS

@@ -22,7 +22,6 @@ final class StatusBarController {
     private let quitItem: NSMenuItem
     private let settingsItem: NSMenuItem
     private let completeSetupItem: NSMenuItem
-    private let statusMenuItem = NSMenuItem()
     private let statsMenuItem = NSMenuItem()
     private var modeMenuItems: [NSMenuItem] = []
     private let quitAction: () -> Void

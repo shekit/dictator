@@ -23,11 +23,6 @@ final class EnvLoader {
         return key?.isEmpty == false ? key : nil
     }
 
-    /// Get Ollama host URL (defaults to localhost:11434).
-    var ollamaHost: String {
-        UserDefaults.standard.string(forKey: "ollamaHost") ?? "http://localhost:11434"
-    }
-
     /// Check if OpenRouter API key is configured.
     var hasOpenRouterKey: Bool {
         guard let key = openRouterAPIKey else { return false }
