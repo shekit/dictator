@@ -37,7 +37,7 @@ fn/space hotkey
 ### Speech-to-text (local)
 - `TranscriptionService` uses FluidAudio and loads v2 Parakeet models.
 - Streaming STT runs during recording; finalization happens on stop.
-- FluidAudio calls are serialized for safety.
+- Only one streaming session is active at a time; existing sessions are cancelled before a new one starts.
 
 ### LLM cleanup
 - `LLMService` supports three modes:

@@ -209,16 +209,17 @@ final class ThreadSafeAudioBuffer {
 }
 ```
 
-### 3. Serialize FluidAudio Calls
-**Problem:** FluidAudio/CoreML cannot handle concurrent transcriptions.
-**Solution:** Use an actor to serialize:
+### 3. Keep A Single Streaming Session
+**Problem:** Overlapping streaming sessions cause state corruption and unreliable finalization.
+**Solution:** Always cancel any active stream before starting a new one:
 ```swift
-private actor TranscriptionExecutor {
-    func run<T>(_ op: @escaping () async throws -> T) async throws -> T {
-        return try await op()
-    }
+func startStreaming() async throws {
+    guard let models = loadedModels else { throw TranscriptionError.notInitialized }
+    await cancelStreaming()
+    let manager = StreamingAsrManager(config: config)
+    self.streamingManager = manager
+    try await manager.start(models: models, source: .microphone)
 }
-// Usage: try await executor.run { asrManager.transcribe(samples) }
 ```
 
 ### 4. CGEvent Tap Health Monitoring

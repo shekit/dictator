@@ -158,7 +158,8 @@ Cost: ~$0.001-0.01 per transcription (very cheap!)
 ### Keyboard Shortcuts
 - **fn (hold)**: Start/stop recording
 - **fn + any key**: Cancel recording
-- **fn + space**: Start/stop hands-free recording mode
+- **fn + space**: Start hands-free recording mode
+- **space (hands-free mode)**: Stop recording
 - **⌘ ,**: Open Settings
 - **⌘ Q**: Quit Dictator
 

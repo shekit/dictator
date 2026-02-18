@@ -596,7 +596,7 @@ Phase 9 (Polish) - Menu bar UX improvements complete
 ### Current Session Cleanup (docs and stale artifacts):
 1. **Documentation synchronized to code as source of truth**
    - Updated `ARCHITECTURE.md` for current hotkeys, streaming STT flow, onboarding steps, menu behavior, and storage locations.
-   - Updated `INSTALL.md` and `Dictator/INSTALL.txt` for model download size/step and hands-free shortcut behavior.
+   - Updated install documentation for model download size/step and hands-free shortcut behavior.
    - Updated `CLAUDE.md` to reflect runtime `UserDefaults` configuration and current cloud model default.
 
 2. **Removed unsupported/stale configuration artifacts**
