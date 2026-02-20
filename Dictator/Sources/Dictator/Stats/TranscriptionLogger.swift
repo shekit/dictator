@@ -32,10 +32,10 @@ actor TranscriptionLogger {
     // MARK: - Initialization
 
     private init() {
-        // Create log directory: ~/Library/Application Support/Dictator/
+        // Create log directory: ~/Library/Application Support/it.shek.dictator/
         // This location doesn't require special permissions
         let appSupportURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        let dictatorDir = appSupportURL.appendingPathComponent("Dictator")
+        let dictatorDir = appSupportURL.appendingPathComponent("it.shek.dictator")
 
         // Create directory if it doesn't exist
         try? fileManager.createDirectory(at: dictatorDir, withIntermediateDirectories: true)

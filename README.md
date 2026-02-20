@@ -66,7 +66,7 @@ Configure your API key or Ollama connection from the Settings window.
 
 ## Privacy
 
-All voice processing happens on-device. No analytics or telemetry. Data is only sent to OpenRouter if you enable Cloud mode. Local mode (Ollama) stays entirely on your machine. Transcription logs are stored locally at `~/Library/Application Support/Dictator/transcriptions.jsonl`.
+All voice processing happens on-device. No analytics or telemetry. Data is only sent to OpenRouter if you enable Cloud mode. Local mode (Ollama) stays entirely on your machine. Transcription logs are stored locally at `~/Library/Application Support/it.shek.dictator/transcriptions.jsonl`.
 
 ## More docs
 
