@@ -5,62 +5,63 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@color/keyboard_background"
-    android:paddingTop="16dp"
-    android:paddingBottom="12dp">
+    android:paddingTop="20dp"
+    android:paddingBottom="20dp">
 
-    <!-- Status text (shows "Hold to Dictate", "Recording...", etc.) -->
+    <!-- Status text -->
     <TextView
         android:id="@+id/statusText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/hold_to_dictate"
         android:textColor="@color/text_secondary"
-        android:textSize="14sp"
-        android:layout_marginBottom="12dp"
+        android:textSize="15sp"
+        android:layout_marginBottom="16dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Mic / Stop button -->
+    <!-- Settings button (left) -->
+    <ImageButton
+        android:id="@+id/settingsButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/ic_settings"
+        android:background="@drawable/side_button_background"
+        android:contentDescription="Settings"
+        android:scaleType="center"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/micButton"
+        app:layout_constraintTop_toTopOf="@id/micButton"
+        app:layout_constraintBottom_toBottomOf="@id/micButton" />
+
+    <!-- Mic / Stop button (center) -->
     <ImageButton
         android:id="@+id/micButton"
-        android:layout_width="72dp"
-        android:layout_height="72dp"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
         android:src="@drawable/ic_mic"
         android:background="@drawable/mic_button_background"
         android:contentDescription="Dictate"
         android:scaleType="center"
         android:layout_marginTop="4dp"
+        android:layout_marginBottom="16dp"
         app:layout_constraintTop_toBottomOf="@id/statusText"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Mode toggle: lock = hold-to-talk (default), unlock = tap-to-toggle -->
+    <!-- Backspace button (right) - deletes whole word -->
     <ImageButton
-        android:id="@+id/modeToggle"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:src="@drawable/ic_lock"
-        android:background="@drawable/toggle_button_background"
-        android:contentDescription="Toggle recording mode"
+        android:id="@+id/backspaceButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/ic_backspace"
+        android:background="@drawable/side_button_background"
+        android:contentDescription="Delete word"
         android:scaleType="center"
-        android:layout_marginStart="8dp"
         app:layout_constraintStart_toEndOf="@id/micButton"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@id/micButton"
         app:layout_constraintBottom_toBottomOf="@id/micButton" />
-
-    <!-- Globe / Switch keyboard button -->
-    <ImageButton
-        android:id="@+id/globeButton"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:src="@drawable/ic_globe"
-        android:background="@drawable/globe_button_background"
-        android:contentDescription="Switch keyboard"
-        android:scaleType="center"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="8dp"
-        app:layout_constraintTop_toBottomOf="@id/micButton"
-        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

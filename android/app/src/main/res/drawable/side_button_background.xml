@@ -3,8 +3,8 @@
     android:color="#33FFFFFF">
     <item>
         <shape android:shape="oval">
-            <solid android:color="@color/globe_button" />
-            <size android:width="40dp" android:height="40dp" />
+            <solid android:color="@android:color/transparent" />
+            <size android:width="48dp" android:height="48dp" />
         </shape>
     </item>
 </ripple>

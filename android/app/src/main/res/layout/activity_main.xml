@@ -1,89 +1,135 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
+<ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FF1C1C1E"
-    android:padding="24dp">
+    android:background="#FF1C1C1E">
 
-    <TextView
-        android:id="@+id/titleText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Dictator"
-        android:textColor="#FFFFFFFF"
-        android:textSize="32sp"
-        android:textStyle="bold"
-        android:layout_marginTop="48dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-    <TextView
-        android:id="@+id/subtitleText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Voice-to-text dictation keyboard"
-        android:textColor="#FF8E8E93"
-        android:textSize="16sp"
-        android:layout_marginTop="8dp"
-        app:layout_constraintTop_toBottomOf="@id/titleText"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-    <TextView
-        android:id="@+id/setupHeader"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Setup"
-        android:textColor="#FFFFFFFF"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:layout_marginTop="48dp"
-        app:layout_constraintTop_toBottomOf="@id/subtitleText"
-        app:layout_constraintStart_toStartOf="parent" />
+        android:orientation="vertical"
+        android:padding="24dp">
 
-    <TextView
-        android:id="@+id/step1Text"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="1. Enable the Dictator keyboard in system settings"
-        android:textColor="#FFCCCCCC"
-        android:textSize="15sp"
-        android:layout_marginTop="16dp"
-        app:layout_constraintTop_toBottomOf="@id/setupHeader"
-        app:layout_constraintStart_toStartOf="parent" />
+        <!-- Title -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Dictator"
+            android:textColor="#FFFFFFFF"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginTop="48dp" />
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/enableKeyboardButton"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Open Input Settings"
-        android:layout_marginTop="8dp"
-        app:layout_constraintTop_toBottomOf="@id/step1Text"
-        app:layout_constraintStart_toStartOf="parent" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Voice-to-text dictation keyboard"
+            android:textColor="#FF8E8E93"
+            android:textSize="16sp"
+            android:gravity="center"
+            android:layout_marginTop="8dp" />
 
-    <TextView
-        android:id="@+id/step2Text"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="2. Switch to the Dictator keyboard in any text field"
-        android:textColor="#FFCCCCCC"
-        android:textSize="15sp"
-        android:layout_marginTop="24dp"
-        app:layout_constraintTop_toBottomOf="@id/enableKeyboardButton"
-        app:layout_constraintStart_toStartOf="parent" />
+        <!-- Setup section -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Setup"
+            android:textColor="#FFFFFFFF"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginTop="48dp" />
 
-    <TextView
-        android:id="@+id/step3Text"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="3. Tap the mic button and start speaking"
-        android:textColor="#FFCCCCCC"
-        android:textSize="15sp"
-        android:layout_marginTop="16dp"
-        app:layout_constraintTop_toBottomOf="@id/step2Text"
-        app:layout_constraintStart_toStartOf="parent" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="1. Enable the Dictator keyboard in system settings"
+            android:textColor="#FFCCCCCC"
+            android:textSize="15sp"
+            android:layout_marginTop="16dp" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/enableKeyboardButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Open Input Settings"
+            android:layout_marginTop="8dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="2. Switch to the Dictator keyboard in any text field"
+            android:textColor="#FFCCCCCC"
+            android:textSize="15sp"
+            android:layout_marginTop="24dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="3. Hold the mic button and start speaking"
+            android:textColor="#FFCCCCCC"
+            android:textSize="15sp"
+            android:layout_marginTop="16dp" />
+
+        <!-- Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#FF3A3A3C"
+            android:layout_marginTop="32dp" />
+
+        <!-- Settings section -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Settings"
+            android:textColor="#FFFFFFFF"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginTop="24dp" />
+
+        <!-- Recording mode -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="20dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="12dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Recording mode"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/recordingModeDescription"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Hold mic button to record, release to stop"
+                    android:textColor="#FF8E8E93"
+                    android:textSize="13sp"
+                    android:layout_marginTop="4dp" />
+
+            </LinearLayout>
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/tapModeSwitch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>

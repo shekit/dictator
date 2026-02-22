@@ -1,27 +1,28 @@
 package it.shek.dictator.app
 
 import android.annotation.SuppressLint
+import android.content.Context
+import android.content.Intent
 import android.inputmethodservice.InputMethodService
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
-import android.view.inputmethod.InputMethodManager
 import android.widget.ImageButton
 import android.widget.TextView
 
 /**
  * Dictator Input Method Service - a minimal dictation keyboard.
  *
- * Two recording modes:
+ * Two recording modes (configurable in main app settings):
  * - Hold-to-talk (default): press and hold mic, speak, release to stop.
  * - Tap-to-toggle: tap to start, tap again to stop.
- *
- * Toggle between modes with the lock button next to the mic.
  */
 class DictatorIME : InputMethodService() {
 
     companion object {
         private const val TAG = "DictatorIME"
+        const val PREFS_NAME = "dictator_prefs"
+        const val KEY_TAP_MODE = "tap_mode"
     }
 
     enum class State {
@@ -30,14 +31,12 @@ class DictatorIME : InputMethodService() {
         PROCESSING
     }
 
-    /** false = hold-to-talk (default), true = tap-to-toggle */
     private var isTapMode = false
-
     private var state = State.IDLE
 
     private var micButton: ImageButton? = null
-    private var globeButton: ImageButton? = null
-    private var modeToggle: ImageButton? = null
+    private var settingsButton: ImageButton? = null
+    private var backspaceButton: ImageButton? = null
     private var statusText: TextView? = null
 
     @SuppressLint("ClickableViewAccessibility")
@@ -46,23 +45,35 @@ class DictatorIME : InputMethodService() {
         val view = layoutInflater.inflate(R.layout.keyboard_view, null)
 
         micButton = view.findViewById(R.id.micButton)
-        globeButton = view.findViewById(R.id.globeButton)
-        modeToggle = view.findViewById(R.id.modeToggle)
+        settingsButton = view.findViewById(R.id.settingsButton)
+        backspaceButton = view.findViewById(R.id.backspaceButton)
         statusText = view.findViewById(R.id.statusText)
 
         micButton?.setOnTouchListener { _, event -> onMicTouch(event) }
-        globeButton?.setOnClickListener { onGlobeTapped() }
-        modeToggle?.setOnClickListener { onModeToggleTapped() }
+        settingsButton?.setOnClickListener { openSettings() }
+        backspaceButton?.setOnClickListener { deleteWord() }
 
+        loadSettings()
         updateUI()
         return view
+    }
+
+    override fun onStartInputView(info: android.view.inputmethod.EditorInfo?, restarting: Boolean) {
+        super.onStartInputView(info, restarting)
+        // Reload settings each time the keyboard appears, in case user changed them
+        loadSettings()
+        updateUI()
+    }
+
+    private fun loadSettings() {
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        isTapMode = prefs.getBoolean(KEY_TAP_MODE, false)
     }
 
     private fun onMicTouch(event: MotionEvent): Boolean {
         if (state == State.PROCESSING) return true
 
         if (isTapMode) {
-            // Tap-to-toggle: only act on ACTION_UP (completed tap)
             if (event.action == MotionEvent.ACTION_UP) {
                 if (state == State.IDLE) {
                     startRecording()
@@ -71,7 +82,6 @@ class DictatorIME : InputMethodService() {
                 }
             }
         } else {
-            // Hold-to-talk: press starts, release stops
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     if (state == State.IDLE) {
@@ -89,7 +99,6 @@ class DictatorIME : InputMethodService() {
     }
 
     private fun startRecording() {
-        // Phase 15 will add actual recording
         Log.d(TAG, "Recording started (mode: ${if (isTapMode) "tap" else "hold"})")
         state = State.RECORDING
         updateUI()
@@ -101,19 +110,32 @@ class DictatorIME : InputMethodService() {
         updateUI()
     }
 
-    private fun onModeToggleTapped() {
-        isTapMode = !isTapMode
-        Log.d(TAG, "Mode toggled: ${if (isTapMode) "tap-to-toggle" else "hold-to-talk"}")
-        if (state == State.RECORDING) {
-            stopRecording()
+    private fun openSettings() {
+        val intent = Intent(this, MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        updateUI()
+        startActivity(intent)
     }
 
-    private fun onGlobeTapped() {
-        Log.d(TAG, "Globe tapped - switching keyboard")
-        val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
-        imm.showInputMethodPicker()
+    private fun deleteWord() {
+        val ic = currentInputConnection ?: return
+        // Select the word before the cursor, then delete it
+        val before = ic.getTextBeforeCursor(100, 0) ?: return
+        if (before.isEmpty()) return
+
+        val text = before.toString()
+        // Find how many characters to delete: back to the start of the previous word
+        var i = text.length
+        // Skip trailing spaces
+        while (i > 0 && text[i - 1] == ' ') i--
+        // Skip the word characters
+        while (i > 0 && text[i - 1] != ' ') i--
+        val charsToDelete = text.length - i
+
+        if (charsToDelete > 0) {
+            ic.deleteSurroundingText(charsToDelete, 0)
+            Log.d(TAG, "Deleted $charsToDelete chars (word backspace)")
+        }
     }
 
     private fun updateUI() {
@@ -134,10 +156,6 @@ class DictatorIME : InputMethodService() {
                 statusText?.text = getString(R.string.processing)
             }
         }
-
-        modeToggle?.setImageResource(
-            if (isTapMode) R.drawable.ic_lock_open else R.drawable.ic_lock
-        )
     }
 
     override fun onDestroy() {
