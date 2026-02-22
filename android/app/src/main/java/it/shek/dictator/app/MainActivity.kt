@@ -4,13 +4,15 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
-import android.view.Gravity
 import android.view.View
+import android.view.inputmethod.InputMethodManager
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.switchmaterial.SwitchMaterial
+import com.google.android.material.tabs.TabLayout
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -43,11 +45,46 @@ class MainActivity : AppCompatActivity() {
             prefs.edit().putBoolean(DictatorIME.KEY_TAP_MODE, isChecked).apply()
             updateModeDescription(description, isChecked)
         }
+
+        // Tabs
+        val tabLayout = findViewById<TabLayout>(R.id.tabLayout)
+        val homeTab = findViewById<ScrollView>(R.id.homeTab)
+        val transcriptionsTab = findViewById<ScrollView>(R.id.transcriptionsTab)
+
+        tabLayout.addTab(tabLayout.newTab().setText("Home"))
+        tabLayout.addTab(tabLayout.newTab().setText("Transcriptions"))
+
+        tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: TabLayout.Tab) {
+                when (tab.position) {
+                    0 -> {
+                        homeTab.visibility = View.VISIBLE
+                        transcriptionsTab.visibility = View.GONE
+                    }
+                    1 -> {
+                        homeTab.visibility = View.GONE
+                        transcriptionsTab.visibility = View.VISIBLE
+                    }
+                }
+            }
+            override fun onTabUnselected(tab: TabLayout.Tab) {}
+            override fun onTabReselected(tab: TabLayout.Tab) {}
+        })
     }
 
     override fun onResume() {
         super.onResume()
+        updateKeyboardStatus()
         loadStats()
+    }
+
+    private fun updateKeyboardStatus() {
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        val enabled = imm.enabledInputMethodList.any {
+            it.packageName == packageName
+        }
+        findViewById<LinearLayout>(R.id.setupSection).visibility =
+            if (enabled) View.GONE else View.VISIBLE
     }
 
     private fun loadStats() {
@@ -109,7 +146,6 @@ class MainActivity : AppCompatActivity() {
             layoutParams = params
         }
 
-        // Meta row: timestamp | word count | WPM
         val dateFormat = SimpleDateFormat("MMM d, h:mm a", Locale.getDefault())
         val durationSec = session.durationMs / 1000
         val meta = "${dateFormat.format(Date(session.timestamp))}  \u00b7  " +
@@ -122,7 +158,6 @@ class MainActivity : AppCompatActivity() {
         }
         card.addView(metaText)
 
-        // Full text
         val bodyText = TextView(this).apply {
             text = session.text
             setTextColor(0xFFFFFFFF.toInt())
