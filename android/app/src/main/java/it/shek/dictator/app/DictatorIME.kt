@@ -21,6 +21,7 @@ import android.view.View
 import android.widget.ImageButton
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import java.util.concurrent.Executors
 
 /**
  * Dictator Input Method Service - a minimal dictation keyboard.
@@ -55,6 +56,11 @@ class DictatorIME : InputMethodService() {
     private var statusText: TextView? = null
 
     private var speechRecognizer: SpeechRecognizer? = null
+
+    // Session tracking for stats
+    private var recordingStartTime = 0L
+    private val sessionTexts = mutableListOf<String>()
+    private val dbExecutor = Executors.newSingleThreadExecutor()
 
     // Backspace: deferred delete with swipe gestures (up=space, down=enter)
     //
@@ -215,6 +221,7 @@ class DictatorIME : InputMethodService() {
                 state = State.RECORDING
                 speechRecognizer?.startListening(createRecognizerIntent())
             } else {
+                if (sessionTexts.isNotEmpty()) saveDictationSession()
                 state = State.IDLE
                 userWantsRecording = false
                 updateUI()
@@ -228,6 +235,7 @@ class DictatorIME : InputMethodService() {
 
             if (text.isNotEmpty()) {
                 insertText(text)
+                sessionTexts.add(text)
             }
 
             if (userWantsRecording) {
@@ -235,6 +243,7 @@ class DictatorIME : InputMethodService() {
                 state = State.RECORDING
                 speechRecognizer?.startListening(createRecognizerIntent())
             } else {
+                saveDictationSession()
                 state = State.IDLE
                 updateUI()
             }
@@ -306,6 +315,8 @@ class DictatorIME : InputMethodService() {
 
         Log.d(TAG, "Recording started (mode: ${if (isTapMode) "tap" else "hold"})")
         micButton?.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+        recordingStartTime = System.currentTimeMillis()
+        sessionTexts.clear()
         userWantsRecording = true
         state = State.RECORDING
         updateUI()
@@ -341,6 +352,27 @@ class DictatorIME : InputMethodService() {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         startActivity(intent)
+    }
+
+    private fun saveDictationSession() {
+        if (sessionTexts.isEmpty()) return
+        val fullText = sessionTexts.joinToString(" ")
+        val wordCount = fullText.split("\\s+".toRegex()).filter { it.isNotEmpty() }.size
+        val durationMs = System.currentTimeMillis() - recordingStartTime
+        val wpm = if (durationMs > 0) ((wordCount.toLong() * 60_000) / durationMs).toInt() else 0
+
+        val session = DictationSession(
+            timestamp = recordingStartTime,
+            text = fullText,
+            wordCount = wordCount,
+            durationMs = durationMs,
+            wpm = wpm
+        )
+        dbExecutor.execute {
+            DictatorDatabase.getInstance(this).dictationSessionDao().insert(session)
+            Log.d(TAG, "Session saved: $wordCount words, ${durationMs}ms, $wpm WPM")
+        }
+        sessionTexts.clear()
     }
 
     private fun onBackspaceTouch(event: MotionEvent): Boolean {

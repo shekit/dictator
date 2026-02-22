@@ -4,12 +4,22 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
+import android.view.Gravity
+import android.view.View
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.switchmaterial.SwitchMaterial
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
+
+    private val dbExecutor = Executors.newSingleThreadExecutor()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,6 +43,104 @@ class MainActivity : AppCompatActivity() {
             prefs.edit().putBoolean(DictatorIME.KEY_TAP_MODE, isChecked).apply()
             updateModeDescription(description, isChecked)
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        loadStats()
+    }
+
+    private fun loadStats() {
+        dbExecutor.execute {
+            val dao = DictatorDatabase.getInstance(this).dictationSessionDao()
+
+            val startOfDay = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }.timeInMillis
+
+            val todayWords = dao.getTodayWords(startOfDay) ?: 0
+            val todayWpm = dao.getTodayAverageWpm(startOfDay)?.toInt() ?: 0
+            val todayCount = dao.getTodayCount(startOfDay)
+
+            val allWords = dao.getTotalWords() ?: 0
+            val allWpm = dao.getAverageWpm()?.toInt() ?: 0
+            val allCount = dao.getTotalCount()
+
+            val sessions = dao.getAll()
+
+            runOnUiThread {
+                findViewById<TextView>(R.id.todayWords).text = todayWords.toString()
+                findViewById<TextView>(R.id.todayWpm).text = todayWpm.toString()
+                findViewById<TextView>(R.id.todaySessions).text = todayCount.toString()
+
+                findViewById<TextView>(R.id.allTimeWords).text = allWords.toString()
+                findViewById<TextView>(R.id.allTimeWpm).text = allWpm.toString()
+                findViewById<TextView>(R.id.allTimeSessions).text = allCount.toString()
+
+                val noTranscriptions = findViewById<TextView>(R.id.noTranscriptions)
+                val container = findViewById<LinearLayout>(R.id.transcriptionsContainer)
+                container.removeAllViews()
+
+                if (sessions.isEmpty()) {
+                    noTranscriptions.visibility = View.VISIBLE
+                } else {
+                    noTranscriptions.visibility = View.GONE
+                    for (session in sessions) {
+                        container.addView(createSessionCard(session))
+                    }
+                }
+            }
+        }
+    }
+
+    private fun createSessionCard(session: DictationSession): View {
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(12), dp(16), dp(12))
+            setBackgroundColor(0xFF2C2C2E.toInt())
+            val params = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            params.bottomMargin = dp(8)
+            layoutParams = params
+        }
+
+        // Meta row: timestamp | word count | WPM
+        val dateFormat = SimpleDateFormat("MMM d, h:mm a", Locale.getDefault())
+        val durationSec = session.durationMs / 1000
+        val meta = "${dateFormat.format(Date(session.timestamp))}  \u00b7  " +
+                "${session.wordCount} words  \u00b7  ${session.wpm} WPM  \u00b7  ${durationSec}s"
+
+        val metaText = TextView(this).apply {
+            text = meta
+            setTextColor(0xFF8E8E93.toInt())
+            textSize = 12f
+        }
+        card.addView(metaText)
+
+        // Full text
+        val bodyText = TextView(this).apply {
+            text = session.text
+            setTextColor(0xFFFFFFFF.toInt())
+            textSize = 14f
+            val params = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            params.topMargin = dp(6)
+            layoutParams = params
+        }
+        card.addView(bodyText)
+
+        return card
+    }
+
+    private fun dp(value: Int): Int {
+        return (value * resources.displayMetrics.density).toInt()
     }
 
     private fun updateModeDescription(tv: TextView, isTapMode: Boolean) {
