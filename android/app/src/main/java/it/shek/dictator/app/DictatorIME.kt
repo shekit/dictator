@@ -198,7 +198,12 @@ class DictatorIME : InputMethodService() {
             val text = matches?.firstOrNull() ?: ""
             if (text.isNotEmpty()) {
                 Log.d(TAG, "Partial result: '$text'")
-                statusText?.text = text
+                val maxLen = 40
+                statusText?.text = if (text.length > maxLen) {
+                    "\u2026${text.takeLast(maxLen)}"
+                } else {
+                    text
+                }
             }
         }
 
