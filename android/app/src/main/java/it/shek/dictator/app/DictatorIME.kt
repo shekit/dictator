@@ -420,18 +420,18 @@ class DictatorIME : InputMethodService() {
         val text = before.toString()
         val end = text.length
 
-        if (text[end - 1] == ' ') {
+        if (text[end - 1].isWhitespace()) {
             var i = end
-            while (i > 0 && text[i - 1] == ' ') i--
-            val spacesToDelete = end - i
-            ic.deleteSurroundingText(spacesToDelete, 0)
-            Log.d(TAG, "Deleted $spacesToDelete spaces")
+            while (i > 0 && text[i - 1].isWhitespace()) i--
+            val count = end - i
+            ic.deleteSurroundingText(count, 0)
+            Log.d(TAG, "Deleted $count whitespace chars")
         } else {
             var i = end
-            while (i > 0 && text[i - 1] != ' ') i--
-            val charsToDelete = end - i
-            ic.deleteSurroundingText(charsToDelete, 0)
-            Log.d(TAG, "Deleted $charsToDelete chars (word)")
+            while (i > 0 && !text[i - 1].isWhitespace()) i--
+            val count = end - i
+            ic.deleteSurroundingText(count, 0)
+            Log.d(TAG, "Deleted $count chars (word)")
         }
     }
 
