@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.dictator.app"
+    namespace = "it.shek.dictator.app"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.dictator.app"
+        applicationId = "it.shek.dictator.app"
         minSdk = 26
         targetSdk = 34
         versionCode = 1

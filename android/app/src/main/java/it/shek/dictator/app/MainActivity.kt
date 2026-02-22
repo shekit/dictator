@@ -1,4 +1,4 @@
-package com.dictator.app
+package it.shek.dictator.app
 
 import android.content.Intent
 import android.os.Bundle

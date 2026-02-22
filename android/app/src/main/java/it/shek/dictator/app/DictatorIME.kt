@@ -1,4 +1,4 @@
-package com.dictator.app
+package it.shek.dictator.app
 
 import android.inputmethodservice.InputMethodService
 import android.util.Log
