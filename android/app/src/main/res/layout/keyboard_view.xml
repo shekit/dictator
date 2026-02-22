@@ -68,9 +68,18 @@
             android:layout_height="wrap_content"
             android:text="␣"
             android:textColor="@color/text_secondary"
-            android:textSize="10sp"
-            android:alpha="0.4"
-            android:layout_marginBottom="2dp" />
+            android:textSize="13sp"
+            android:alpha="0.5" />
+
+        <TextView
+            android:id="@+id/hintArrowUp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="↑"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp"
+            android:alpha="0.35"
+            android:layout_marginBottom="1dp" />
 
         <ImageButton
             android:id="@+id/backspaceButton"
@@ -82,14 +91,23 @@
             android:scaleType="center" />
 
         <TextView
+            android:id="@+id/hintArrowDown"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="↓"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp"
+            android:alpha="0.35"
+            android:layout_marginTop="1dp" />
+
+        <TextView
             android:id="@+id/hintEnter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="⏎"
             android:textColor="@color/text_secondary"
-            android:textSize="10sp"
-            android:alpha="0.4"
-            android:layout_marginTop="2dp" />
+            android:textSize="13sp"
+            android:alpha="0.5" />
 
     </LinearLayout>
 
