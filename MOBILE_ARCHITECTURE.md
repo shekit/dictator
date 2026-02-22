@@ -36,19 +36,18 @@ Switch back to regular keyboard
 
 ## Keyboard UI
 
-Intentionally minimal - this is not a general-purpose keyboard:
+Two buttons. That's it.
 
 ```
 ┌─────────────────────────────────────────┐
 │                                         │
 │            ┌───────────┐                │
 │            │           │                │
-│            │    🎤     │   Tap to       │
-│            │           │   Dictate      │
+│            │    🎤     │                │
+│            │           │                │
 │            └───────────┘                │
 │                                         │
-│  [🌐 Switch Keyboard]    [⚙️ Settings]  │
-│                                         │
+│  [🌐]                                   │
 └─────────────────────────────────────────┘
 ```
 
@@ -58,13 +57,11 @@ During recording:
 ┌─────────────────────────────────────────┐
 │                                         │
 │            ┌───────────┐                │
-│            │    ⏹️     │   Tap to       │
-│            │  ●  REC   │   Stop         │
+│            │    ⏹️     │                │
+│            │  ●  REC   │                │
 │            └───────────┘                │
 │                                         │
-│         "Hello world..."                │
-│         (live preview)                  │
-│                                         │
+│  [🌐]    "Hello world..."              │
 └─────────────────────────────────────────┘
 ```
 
@@ -109,8 +106,8 @@ During recording:
 │              Main App                    │
 │  ┌────────────────────────────────────┐  │
 │  │  - Onboarding & permissions        │  │
-│  │  - Settings (cloud LLM toggle)     │  │
-│  │  - API key configuration           │  │
+│  │  - All settings (cloud LLM, API    │  │
+│  │    key, model selection)           │  │
 │  └────────────────────────────────────┘  │
 └──────────────────────────────────────────┘
                     │
@@ -119,20 +116,21 @@ During recording:
 ┌──────────────────────────────────────────┐
 │      Input Method Service (IME)          │
 │  ┌────────────────────────────────────┐  │
-│  │  - Mic button UI (Compose)         │  │
-│  │  - Audio recording (AudioRecord)   │  │
-│  │  - STT (Whisper.cpp or Vosk)       │  │
-│  │  - Text insertion                  │  │
-│  │  - Cloud LLM client (optional)     │  │
+│  │  - Mic button + globe button only  │  │
+│  │  - STT (SpeechRecognizer → later   │  │
+│  │    swap to Whisper.cpp)            │  │
+│  │  - Text insertion via              │  │
+│  │    InputConnection                 │  │
 │  └────────────────────────────────────┘  │
 └──────────────────────────────────────────┘
 ```
 
 **Key Android Components:**
 - `InputMethodService` subclass for the keyboard
-- Whisper.cpp (via JNI) or Vosk for on-device STT
-- SharedPreferences for settings
-- No special permissions beyond microphone
+- Android `SpeechRecognizer` for STT (Phase 15), later replaced by Whisper.cpp (Phase 18)
+- Keyboard has only two buttons: mic and globe (all settings live in the main app)
+- SharedPreferences for sharing settings between app and IME
+- No special permissions beyond RECORD_AUDIO
 
 ## Speech-to-Text Options
 
@@ -144,7 +142,9 @@ During recording:
 | **Android** | Vosk | Offline, lightweight | Lower accuracy than Whisper |
 | **Android** | Google Speech API | High quality | Requires network, API costs |
 
-**Recommendation:** Start with platform-native (SFSpeechRecognizer on iOS) for simplicity, evaluate Whisper.cpp later if offline quality matters.
+**Android strategy:** Start with Android's built-in `SpeechRecognizer` (zero setup, instant results). Swap to Whisper.cpp in Phase 18 for fully offline STT.
+
+**iOS strategy:** Start with `SFSpeechRecognizer` for simplicity.
 
 ## Cloud LLM Integration (Optional)
 
@@ -196,32 +196,17 @@ Cleaned text: "I was thinking we should meet tomorrow."
 
 No audio or text leaves the device unless cloud LLM is explicitly enabled.
 
-## Phased Implementation
+## Android Phases
 
-### Phase 1: Minimal Keyboard (MVP)
-- Keyboard with mic button
-- On-device STT
-- Text insertion
-- Switch keyboard button
-- **Goal:** Dictate text into any app
+See `features.json` for full feature list and verification steps.
 
-### Phase 2: Polish
-- Live transcription preview while speaking
-- Auto-stop on silence detection
-- Recording indicator animation
-- Error handling (no mic permission, etc.)
-
-### Phase 3: Cloud LLM
-- Settings screen in main app
-- API key configuration
-- Toggle for cloud cleanup
-- OpenRouter integration
-
-### Phase 4: Enhancements
-- Custom dictionary (proper nouns)
-- Punctuation commands ("period", "comma")
-- Multiple languages
-- Haptic feedback
+| Phase | Name | What |
+|-------|------|------|
+| 14 | Keyboard Shell | IME with mic + globe buttons |
+| 15 | Dictation | SpeechRecognizer → InputConnection |
+| 16 | Main App & Cloud LLM | Onboarding, settings, OpenRouter |
+| 17 | Polish | Haptics, auto-stop, live preview, errors |
+| 18 | Whisper Migration | Swap SpeechRecognizer for Whisper.cpp |
 
 ## File Structure
 
@@ -248,21 +233,25 @@ DictatorMobile/
 
 ### Android
 ```
-app/
-├── src/main/
-│   ├── java/.../
-│   │   ├── MainActivity.kt
-│   │   ├── SettingsActivity.kt
-│   │   ├── DictatorIME.kt          # InputMethodService
-│   │   ├── KeyboardView.kt
-│   │   ├── AudioRecorder.kt
-│   │   └── SpeechRecognizer.kt
+android/
+├── app/
+│   ├── src/main/
+│   │   ├── java/.../
+│   │   │   ├── MainActivity.kt
+│   │   │   ├── SettingsActivity.kt
+│   │   │   ├── DictatorIME.kt          # InputMethodService
+│   │   │   ├── KeyboardView.kt
+│   │   │   ├── AudioRecorder.kt
+│   │   │   └── SpeechRecognizer.kt
+│   │   │
+│   │   └── res/
+│   │       └── xml/
+│   │           └── method.xml          # IME configuration
 │   │
-│   └── res/
-│       └── xml/
-│           └── method.xml          # IME configuration
-│
-└── whisper/                        # Whisper.cpp module (if used)
+│   └── build.gradle.kts
+├── build.gradle.kts
+├── settings.gradle.kts
+└── gradle/
 ```
 
 ## What's Different from macOS Version
@@ -275,14 +264,9 @@ app/
 | UI | Menu bar + settings window | Keyboard + main app |
 | Always available | Yes (global hotkey) | Only when keyboard is active |
 
-## Open Questions
+## Resolved Decisions
 
-1. **Auto-stop on silence?** Should recording automatically stop after N seconds of silence, or require explicit tap to stop?
-
-2. **Live preview?** Show transcription as user speaks, or only after they stop?
-
-3. **Haptic feedback?** Vibrate on start/stop recording?
-
-4. **Keyboard height?** Match system keyboard height or use minimal height?
-
-5. **iOS "Allow Full Access" messaging?** How to explain the scary warning if user wants cloud LLM?
+- **Auto-stop on silence:** Yes, Phase 17
+- **Live preview:** Yes, Phase 17
+- **Haptic feedback:** Yes, Phase 17
+- **Keyboard UI:** Minimal — mic button + globe only, all settings in main app

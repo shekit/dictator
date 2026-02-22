@@ -1088,9 +1088,9 @@
     {
       "phase": 15,
       "platform": "android",
-      "name": "Android Audio & STT",
-      "description": "Record audio and transcribe using Whisper or Vosk",
-      "testable_outcome": "Tap mic, speak, see transcription in logcat",
+      "name": "Android Dictation",
+      "description": "Record and transcribe with Android SpeechRecognizer, insert text at cursor",
+      "testable_outcome": "Tap mic, speak, text appears in active text field",
       "features": [
         {
           "id": "15.1",
@@ -1099,59 +1099,59 @@
             "Tap mic button for first time",
             "Android permission dialog appears",
             "Grant permission",
-            "Recording starts"
+            "No crash"
           ],
           "passes": false
         },
         {
           "id": "15.2",
-          "description": "Initialize STT engine (Whisper.cpp or Vosk)",
+          "description": "Initialize Android SpeechRecognizer",
           "verification": [
-            "App/keyboard starts",
-            "STT model loads (may take a moment first time)",
-            "Logcat shows 'STT ready'"
+            "Keyboard starts",
+            "SpeechRecognizer initializes without error",
+            "Logcat shows 'SpeechRecognizer ready'"
           ],
           "passes": false
         },
         {
           "id": "15.3",
-          "description": "Record audio on mic tap",
+          "description": "Tap mic starts recording with visual indicator",
           "verification": [
             "Tap mic to start recording",
-            "Visual indicator shows recording state",
-            "Tap again to stop",
-            "Logcat shows audio captured"
+            "Button changes appearance (color/animation)",
+            "SpeechRecognizer begins listening",
+            "Logcat shows audio being captured"
           ],
           "passes": false
         },
         {
           "id": "15.4",
-          "description": "Transcribe audio to text",
+          "description": "Tap stop ends recording and inserts text via InputConnection",
           "verification": [
-            "Record 'hello world'",
-            "Stop recording",
-            "Logcat shows transcription containing 'hello' and 'world'"
+            "Open Notes app, switch to Dictator keyboard",
+            "Tap mic, say 'hello world', tap stop",
+            "Text 'hello world' appears in Notes"
           ],
           "passes": false
         },
         {
           "id": "15.5",
-          "description": "Visual recording indicator",
+          "description": "Handle empty/silent recordings gracefully",
           "verification": [
-            "Tap mic to start",
-            "Button changes appearance",
-            "Tap to stop",
-            "Button returns to normal"
+            "Record silence for 2 seconds",
+            "Stop recording",
+            "No crash, no garbage text inserted"
           ],
           "passes": false
         },
         {
           "id": "15.6",
-          "description": "Handle empty/silent recordings",
+          "description": "End-to-end: speak to text in any app",
           "verification": [
-            "Record silence for 2 seconds",
-            "Stop recording",
-            "App handles gracefully, no crash"
+            "Test in Messages app",
+            "Test in Chrome URL bar",
+            "Test in third-party app (WhatsApp/Slack)",
+            "Text inserts correctly in all"
           ],
           "passes": false
         }
@@ -1160,75 +1160,23 @@
     {
       "phase": 16,
       "platform": "android",
-      "name": "Android Text Insertion",
-      "description": "Insert transcribed text into active text field",
-      "testable_outcome": "Speak into keyboard, text appears in any app",
+      "name": "Android Main App & Cloud LLM",
+      "description": "Main app for onboarding, settings, and OpenRouter cloud LLM integration",
+      "testable_outcome": "App guides setup, cloud LLM cleans dictated text",
       "features": [
         {
           "id": "16.1",
-          "description": "Insert text via InputConnection",
-          "verification": [
-            "Open any notes app",
-            "Switch to Dictator keyboard",
-            "Dictate 'hello world'",
-            "Text 'hello world' appears in field"
-          ],
-          "passes": false
-        },
-        {
-          "id": "16.2",
-          "description": "Works in any app",
-          "verification": [
-            "Test in Messages",
-            "Test in Chrome URL bar",
-            "Test in third-party app (WhatsApp/Slack)",
-            "Text inserts correctly in all"
-          ],
-          "passes": false
-        },
-        {
-          "id": "16.3",
-          "description": "Processing indicator during transcription",
-          "verification": [
-            "Stop recording",
-            "See spinner/indicator while processing",
-            "Indicator clears when text inserted"
-          ],
-          "passes": false
-        },
-        {
-          "id": "16.4",
-          "description": "End-to-end: speak to text in any app",
-          "verification": [
-            "Open any app with text field",
-            "Switch to Dictator keyboard",
-            "Tap mic, say 'this is a test', tap stop",
-            "Text appears in the field"
-          ],
-          "passes": false
-        }
-      ]
-    },
-    {
-      "phase": 17,
-      "platform": "android",
-      "name": "Android Main App & Settings",
-      "description": "Main app for onboarding and cloud LLM configuration",
-      "testable_outcome": "App guides setup, cloud LLM cleans text",
-      "features": [
-        {
-          "id": "17.1",
-          "description": "Main app with onboarding flow",
+          "description": "Main Activity with onboarding flow",
           "verification": [
             "Fresh install",
-            "App shows steps: enable keyboard, grant permissions",
+            "App shows steps: enable keyboard, grant mic permission",
             "Clear instructions guide user through setup"
           ],
           "passes": false
         },
         {
-          "id": "17.2",
-          "description": "Settings screen with cloud LLM toggle",
+          "id": "16.2",
+          "description": "Settings screen with cloud LLM toggle and API key input",
           "verification": [
             "Settings shows cloud LLM on/off toggle",
             "Shows API key input field",
@@ -1237,8 +1185,8 @@
           "passes": false
         },
         {
-          "id": "17.3",
-          "description": "SharedPreferences accessible from IME service",
+          "id": "16.3",
+          "description": "SharedPreferences shared between main app and IME",
           "verification": [
             "Change setting in main app",
             "Open keyboard in another app",
@@ -1247,8 +1195,8 @@
           "passes": false
         },
         {
-          "id": "17.4",
-          "description": "OpenRouter API integration",
+          "id": "16.4",
+          "description": "OpenRouter API integration for text cleanup",
           "verification": [
             "Cloud LLM enabled, API key set",
             "Dictate 'um like hello'",
@@ -1257,8 +1205,8 @@
           "passes": false
         },
         {
-          "id": "17.5",
-          "description": "Graceful fallback on API error",
+          "id": "16.5",
+          "description": "Graceful fallback when cloud API fails",
           "verification": [
             "Set invalid API key",
             "Dictate text",
@@ -1270,35 +1218,25 @@
       ]
     },
     {
-      "phase": 18,
-      "platform": "mobile",
-      "name": "Mobile Polish",
-      "description": "UX refinements for both iOS and Android",
-      "testable_outcome": "Both mobile apps feel complete and polished",
+      "phase": 17,
+      "platform": "android",
+      "name": "Android Polish",
+      "description": "UX polish for the Android keyboard",
+      "testable_outcome": "Polished UX with haptics, auto-stop, live preview, and error recovery",
       "features": [
         {
-          "id": "18.1",
-          "description": "Live transcription preview (iOS)",
+          "id": "17.1",
+          "description": "Live transcription preview while speaking",
           "verification": [
-            "Start recording on iOS",
+            "Start recording",
             "Speak continuously",
             "See words appear in keyboard UI as you speak"
           ],
           "passes": false
         },
         {
-          "id": "18.2",
-          "description": "Live transcription preview (Android)",
-          "verification": [
-            "Start recording on Android",
-            "Speak continuously",
-            "See words appear in keyboard UI as you speak"
-          ],
-          "passes": false
-        },
-        {
-          "id": "18.3",
-          "description": "Auto-stop on silence (iOS)",
+          "id": "17.2",
+          "description": "Auto-stop on silence detection",
           "verification": [
             "Start recording",
             "Speak, then stop speaking",
@@ -1307,27 +1245,8 @@
           "passes": false
         },
         {
-          "id": "18.4",
-          "description": "Auto-stop on silence (Android)",
-          "verification": [
-            "Start recording",
-            "Speak, then stop speaking",
-            "After ~2 seconds of silence, recording auto-stops"
-          ],
-          "passes": false
-        },
-        {
-          "id": "18.5",
-          "description": "Haptic feedback (iOS)",
-          "verification": [
-            "Tap mic to start - feel haptic tap",
-            "Tap to stop - feel different haptic"
-          ],
-          "passes": false
-        },
-        {
-          "id": "18.6",
-          "description": "Haptic feedback (Android)",
+          "id": "17.3",
+          "description": "Haptic feedback on start/stop recording",
           "verification": [
             "Tap mic to start - feel vibration",
             "Tap to stop - feel different vibration"
@@ -1335,19 +1254,8 @@
           "passes": false
         },
         {
-          "id": "18.7",
-          "description": "Error states with recovery (iOS)",
-          "verification": [
-            "Deny mic permission",
-            "Tap mic button",
-            "Clear error message shown",
-            "Tap opens iOS Settings to fix"
-          ],
-          "passes": false
-        },
-        {
-          "id": "18.8",
-          "description": "Error states with recovery (Android)",
+          "id": "17.4",
+          "description": "Error states with recovery guidance",
           "verification": [
             "Deny mic permission",
             "Tap mic button",
@@ -1357,14 +1265,94 @@
           "passes": false
         }
       ]
+    },
+    {
+      "phase": 18,
+      "platform": "android",
+      "name": "Android Whisper Migration",
+      "description": "Replace SpeechRecognizer with Whisper.cpp for fully offline on-device STT",
+      "testable_outcome": "Dictation works in airplane mode with no Google dependency",
+      "features": [
+        {
+          "id": "18.1",
+          "description": "Integrate Whisper.cpp for fully offline on-device STT",
+          "verification": [
+            "Enable airplane mode",
+            "Dictate 'hello world'",
+            "Text appears correctly",
+            "No network requests made"
+          ],
+          "passes": false
+        },
+        {
+          "id": "18.2",
+          "description": "Whisper model download and management",
+          "verification": [
+            "First run downloads Whisper model",
+            "Subsequent runs use cached model",
+            "Model size shown in settings",
+            "Option to delete/re-download model"
+          ],
+          "passes": false
+        }
+      ]
+    },
+    {
+      "phase": 19,
+      "platform": "ios",
+      "name": "iOS Polish",
+      "description": "UX refinements for iOS keyboard",
+      "testable_outcome": "iOS app feels complete and polished",
+      "features": [
+        {
+          "id": "19.1",
+          "description": "Live transcription preview (iOS)",
+          "verification": [
+            "Start recording on iOS",
+            "Speak continuously",
+            "See words appear in keyboard UI as you speak"
+          ],
+          "passes": false
+        },
+        {
+          "id": "19.2",
+          "description": "Auto-stop on silence (iOS)",
+          "verification": [
+            "Start recording",
+            "Speak, then stop speaking",
+            "After ~2 seconds of silence, recording auto-stops"
+          ],
+          "passes": false
+        },
+        {
+          "id": "19.3",
+          "description": "Haptic feedback (iOS)",
+          "verification": [
+            "Tap mic to start - feel haptic tap",
+            "Tap to stop - feel different haptic"
+          ],
+          "passes": false
+        },
+        {
+          "id": "19.4",
+          "description": "Error states with recovery (iOS)",
+          "verification": [
+            "Deny mic permission",
+            "Tap mic button",
+            "Clear error message shown",
+            "Tap opens iOS Settings to fix"
+          ],
+          "passes": false
+        }
+      ]
     }
   ],
   "metadata": {
-    "total_features": 97,
-    "macos_features": 55,
-    "ios_features": 21,
-    "android_features": 21,
+    "total_features": 114,
+    "macos_features": 67,
+    "ios_features": 25,
+    "android_features": 22,
     "created": "2026-01-20",
-    "last_updated": "2026-01-26"
+    "last_updated": "2026-02-21"
   }
 }

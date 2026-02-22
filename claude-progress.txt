@@ -2,6 +2,8 @@
 
 This file tracks progress across coding sessions. Append new entries at the bottom.
 
+**NOTE TO AGENTS:** Skip to the bottom of this file. Only the most recent 1-2 entries matter. All macOS phases (1-9) are complete. Android work starts at Phase 14.
+
 ---
 
 ## Session 0 - 2026-01-20 (Setup)
