@@ -67,9 +67,9 @@ class DictatorIME : InputMethodService() {
     // On touch-down nothing visible happens. The gesture resolves on:
     //   - Swipe up/down detected: insert space/enter (no delete ever fires)
     //   - Finger lift with no swipe: delete one word instantly
-    //   - Hold 150ms with no swipe: start deleting + accelerating repeat
+    //   - Hold 400ms with no swipe: start deleting + accelerating repeat
     private val backspaceHandler = Handler(Looper.getMainLooper())
-    private val backspaceHoldDelay = 150L
+    private val backspaceHoldDelay = 400L
     private val backspaceStartInterval = 200L
     private val backspaceMinInterval = 40L
     private val backspaceAccelStep = 20L
