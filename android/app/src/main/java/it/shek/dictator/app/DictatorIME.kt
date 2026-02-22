@@ -215,7 +215,10 @@ class DictatorIME : InputMethodService() {
             if (userWantsRecording) {
                 // SpeechRecognizer auto-stopped on silence, but user is still
                 // holding mic (hold mode) or hasn't tapped stop (tap mode).
-                // Insert what we have and restart listening.
+                // Insert what we have + a space so the next chunk doesn't merge.
+                if (text.isNotEmpty()) {
+                    insertText(" ")
+                }
                 Log.d(TAG, "Auto-restarting SpeechRecognizer (user still recording)")
                 state = State.RECORDING
                 speechRecognizer?.startListening(createRecognizerIntent())
