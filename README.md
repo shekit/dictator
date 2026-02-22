@@ -8,12 +8,9 @@ Optionally enable AI post-processing to strip filler words, fix spelling, use cu
 
 ## Requirements
 
-- macOS 14.0+ (Sonoma)
-- Apple Silicon Mac (M1/M2/M3/M4)
-- ~500MB free space (for speech models)
-
-- Android 13.0+
-- ~5mb free space
+- Apple Silicon macOS 14.0+ (Sonoma) or Android 13.0+
+- ~500MB free space (for speech models on mac)
+- ~5mb free space on Android
 
 ## Install from DMG (Easy)
 
