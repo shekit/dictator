@@ -1,6 +1,6 @@
 # Dictator
 
-Free, local and private dictation app for macOS. Go from 40 WPM typing to 150+.
+Free, local and private dictation app for macOS and Android. Go from 40 WPM typing to 150+.
 
 Hold `fn`, speak, release - text appears at your cursor. 
 
@@ -11,6 +11,9 @@ Optionally enable AI post-processing to strip filler words, fix spelling, use cu
 - macOS 14.0+ (Sonoma)
 - Apple Silicon Mac (M1/M2/M3/M4)
 - ~500MB free space (for speech models)
+
+- Android 13.0+
+- ~5mb free space
 
 ## Install from DMG (Easy)
 
