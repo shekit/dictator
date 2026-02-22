@@ -181,6 +181,35 @@ class DictatorIME : InputMethodService() {
         setCandidatesViewShown(true)
     }
 
+    override fun onCreateInlineSuggestionsRequest(uiExtras: Bundle): android.view.inputmethod.InlineSuggestionsRequest? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return null
+        val spec = android.widget.inline.InlinePresentationSpec.Builder(
+            android.util.Size(0, 0),
+            android.util.Size(Int.MAX_VALUE, Int.MAX_VALUE)
+        ).build()
+        return android.view.inputmethod.InlineSuggestionsRequest.Builder(listOf(spec))
+            .setMaxSuggestionCount(6)
+            .build()
+    }
+
+    override fun onInlineSuggestionsResponse(response: android.view.inputmethod.InlineSuggestionsResponse): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return false
+        val suggestions = response.inlineSuggestions
+        Log.d(TAG, "Received ${suggestions.size} inline suggestions")
+        candidatesContainer?.removeAllViews()
+        if (suggestions.isEmpty()) {
+            setCandidatesViewShown(false)
+            return true
+        }
+        for (suggestion in suggestions) {
+            suggestion.inflate(this, android.util.Size(0, 0), mainExecutor) { inflatedView ->
+                candidatesContainer?.addView(inflatedView)
+                setCandidatesViewShown(true)
+            }
+        }
+        return true
+    }
+
     override fun onStartInputView(info: android.view.inputmethod.EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         loadSettings()
