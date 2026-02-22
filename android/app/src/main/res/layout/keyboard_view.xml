@@ -8,12 +8,12 @@
     android:paddingTop="16dp"
     android:paddingBottom="12dp">
 
-    <!-- Status text (shows "Tap to Dictate", "Recording...", etc.) -->
+    <!-- Status text (shows "Hold to Dictate", "Recording...", etc.) -->
     <TextView
         android:id="@+id/statusText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/tap_to_dictate"
+        android:text="@string/hold_to_dictate"
         android:textColor="@color/text_secondary"
         android:textSize="14sp"
         android:layout_marginBottom="12dp"
@@ -34,6 +34,20 @@
         app:layout_constraintTop_toBottomOf="@id/statusText"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Mode toggle: lock = hold-to-talk (default), unlock = tap-to-toggle -->
+    <ImageButton
+        android:id="@+id/modeToggle"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:src="@drawable/ic_lock"
+        android:background="@drawable/toggle_button_background"
+        android:contentDescription="Toggle recording mode"
+        android:scaleType="center"
+        android:layout_marginStart="8dp"
+        app:layout_constraintStart_toEndOf="@id/micButton"
+        app:layout_constraintTop_toTopOf="@id/micButton"
+        app:layout_constraintBottom_toBottomOf="@id/micButton" />
 
     <!-- Globe / Switch keyboard button -->
     <ImageButton

@@ -2,6 +2,7 @@
 <resources>
     <string name="app_name">Dictator</string>
     <string name="ime_name">Dictator</string>
+    <string name="hold_to_dictate">Hold to Dictate</string>
     <string name="tap_to_dictate">Tap to Dictate</string>
     <string name="recording">Recording&#8230;</string>
     <string name="processing">Processing&#8230;</string>
