@@ -16,11 +16,11 @@ class ModelManager(private val context: Context) {
     companion object {
         private const val TAG = "ModelManager"
         private const val MODEL_DIR = "whisper"
-        private const val MODEL_FILENAME = "ggml-tiny.en.bin"
+        private const val MODEL_FILENAME = "ggml-tiny.en-q5_1.bin"
         private const val MODEL_URL =
-            "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.en.bin"
-        const val MODEL_DISPLAY_NAME = "Whisper Tiny (English)"
-        const val MODEL_SIZE_MB = 75
+            "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.en-q5_1.bin"
+        const val MODEL_DISPLAY_NAME = "Whisper Tiny Q5 (English)"
+        const val MODEL_SIZE_MB = 32
     }
 
     private val modelDir: File get() = File(context.filesDir, MODEL_DIR)

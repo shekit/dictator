@@ -20,7 +20,8 @@ class WhisperTranscriber {
     private var contextPtr: Long = 0
     private var audioRecord: AudioRecord? = null
     @Volatile
-    private var isRecording = false
+    var isRecording = false
+        private set
     private val audioBuffer = mutableListOf<Float>()
     private var recordingJob: Job? = null
 
