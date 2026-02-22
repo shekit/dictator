@@ -1241,51 +1241,12 @@
     {
       "phase": 18,
       "platform": "android",
-      "name": "Android Main App",
-      "description": "Main app with onboarding flow and basic settings",
-      "testable_outcome": "App guides user through keyboard setup, settings shared with IME",
-      "features": [
-        {
-          "id": "18.1",
-          "description": "Main Activity with onboarding flow",
-          "verification": [
-            "Fresh install",
-            "App shows steps: enable keyboard, grant mic permission",
-            "Clear instructions guide user through setup"
-          ],
-          "passes": false
-        },
-        {
-          "id": "18.2",
-          "description": "Settings screen (STT engine selection, preferences)",
-          "verification": [
-            "Settings screen accessible from main app",
-            "Can select STT engine (SpeechRecognizer / Whisper)",
-            "Changes persist across app restart"
-          ],
-          "passes": false
-        },
-        {
-          "id": "18.3",
-          "description": "SharedPreferences shared between main app and IME",
-          "verification": [
-            "Change setting in main app",
-            "Open keyboard in another app",
-            "Keyboard uses new setting"
-          ],
-          "passes": false
-        }
-      ]
-    },
-    {
-      "phase": 19,
-      "platform": "android",
       "name": "Android Stats & Transcriptions",
       "description": "Track dictation stats and store transcription history locally on-device",
       "testable_outcome": "Stats page shows WPM and word counts, transcriptions page shows full history",
       "features": [
         {
-          "id": "19.1",
+          "id": "18.1",
           "description": "Room database for dictation sessions",
           "verification": [
             "Dictate a few sentences",
@@ -1295,7 +1256,7 @@
           "passes": false
         },
         {
-          "id": "19.2",
+          "id": "18.2",
           "description": "Stats page in main app",
           "verification": [
             "Open main app, navigate to Stats tab",
@@ -1306,18 +1267,17 @@
           "passes": false
         },
         {
-          "id": "19.3",
+          "id": "18.3",
           "description": "Transcriptions page in main app",
           "verification": [
             "Open main app, navigate to Transcriptions tab",
             "Shows list of past transcriptions sorted by most recent",
-            "Each entry shows timestamp, text preview, word count, and duration",
-            "Tap entry to see full transcription text"
+            "Each entry shows timestamp, full text, word count, and duration"
           ],
           "passes": false
         },
         {
-          "id": "19.4",
+          "id": "18.4",
           "description": "WPM calculation per session",
           "verification": [
             "Dictate for ~10 seconds",
@@ -1327,13 +1287,52 @@
           "passes": false
         },
         {
-          "id": "19.5",
+          "id": "18.5",
           "description": "Stats persist across app restart",
           "verification": [
             "Do several dictation sessions",
             "Note the stats",
             "Force-close and reopen main app",
             "Stats and transcriptions are preserved"
+          ],
+          "passes": false
+        }
+      ]
+    },
+    {
+      "phase": 19,
+      "platform": "android",
+      "name": "Android Main App",
+      "description": "Main app with onboarding flow and basic settings",
+      "testable_outcome": "App guides user through keyboard setup, settings shared with IME",
+      "features": [
+        {
+          "id": "19.1",
+          "description": "Main Activity with onboarding flow",
+          "verification": [
+            "Fresh install",
+            "App shows steps: enable keyboard, grant mic permission",
+            "Clear instructions guide user through setup"
+          ],
+          "passes": false
+        },
+        {
+          "id": "19.2",
+          "description": "Settings screen (STT engine selection, preferences)",
+          "verification": [
+            "Settings screen accessible from main app",
+            "Can select STT engine (SpeechRecognizer / Whisper)",
+            "Changes persist across app restart"
+          ],
+          "passes": false
+        },
+        {
+          "id": "19.3",
+          "description": "SharedPreferences shared between main app and IME",
+          "verification": [
+            "Change setting in main app",
+            "Open keyboard in another app",
+            "Keyboard uses new setting"
           ],
           "passes": false
         }

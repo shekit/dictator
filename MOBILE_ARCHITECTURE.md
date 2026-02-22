@@ -206,8 +206,8 @@ See `features.json` for full feature list and verification steps.
 | 15 | Dictation | SpeechRecognizer → InputConnection |
 | 16 | Whisper Option | Add Whisper.cpp as alternative STT engine (user toggle) |
 | 17 | Polish | Haptics, auto-stop, live preview, errors |
-| 18 | Main App | Onboarding, settings, SharedPreferences |
-| 19 | Stats & Transcriptions | WPM tracking, session history, Room database |
+| 18 | Stats & Transcriptions | WPM tracking, session history, Room database |
+| 19 | Main App | Onboarding, settings, SharedPreferences |
 | 20 | Cloud LLM | OpenRouter integration for text cleanup |
 
 ## File Structure
