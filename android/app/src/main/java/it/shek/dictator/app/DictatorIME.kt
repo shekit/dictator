@@ -54,14 +54,23 @@ class DictatorIME : InputMethodService() {
 
     private var speechRecognizer: SpeechRecognizer? = null
 
-    // Backspace repeat-on-hold
+    // Backspace repeat-on-hold with acceleration
     private val backspaceHandler = Handler(Looper.getMainLooper())
-    private var backspaceDelay = 400L // initial delay before repeat starts
-    private val backspaceRepeatInterval = 100L // interval between repeats
+    private val backspaceInitialDelay = 400L
+    private val backspaceStartInterval = 200L
+    private val backspaceMinInterval = 40L
+    private val backspaceAccelStep = 20L // ms faster each repeat
+    private var backspaceCurrentInterval = backspaceStartInterval
     private val backspaceRepeatRunnable: Runnable = object : Runnable {
         override fun run() {
             deleteWord()
-            backspaceHandler.postDelayed(this, backspaceRepeatInterval)
+            if (backspaceCurrentInterval > backspaceMinInterval) {
+                backspaceCurrentInterval -= backspaceAccelStep
+                if (backspaceCurrentInterval < backspaceMinInterval) {
+                    backspaceCurrentInterval = backspaceMinInterval
+                }
+            }
+            backspaceHandler.postDelayed(this, backspaceCurrentInterval)
         }
     }
 
@@ -309,8 +318,9 @@ class DictatorIME : InputMethodService() {
     private fun onBackspaceTouch(event: MotionEvent): Boolean {
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
+                backspaceCurrentInterval = backspaceStartInterval
                 deleteWord()
-                backspaceHandler.postDelayed(backspaceRepeatRunnable, backspaceDelay)
+                backspaceHandler.postDelayed(backspaceRepeatRunnable, backspaceInitialDelay)
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                 backspaceHandler.removeCallbacks(backspaceRepeatRunnable)
