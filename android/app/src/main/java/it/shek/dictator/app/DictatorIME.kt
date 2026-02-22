@@ -62,10 +62,9 @@ class DictatorIME : InputMethodService() {
     private val sessionTexts = mutableListOf<String>()
     private val dbExecutor = Executors.newSingleThreadExecutor()
 
-    // Backspace: deferred delete with swipe gestures (up=space, down=enter)
-    //
-    // On touch-down nothing visible happens. The gesture resolves on:
-    //   - Swipe up/down detected: insert space/enter (no delete ever fires)
+    // Backspace: deferred delete with swipe gestures
+    //   - Swipe right: space, Swipe left: question mark
+    //   - Swipe up: period, Swipe down: enter
     //   - Finger lift with no swipe: delete one word instantly
     //   - Hold 400ms with no swipe: start deleting + accelerating repeat
     private val backspaceHandler = Handler(Looper.getMainLooper())
@@ -96,7 +95,7 @@ class DictatorIME : InputMethodService() {
         }
     }
 
-    private enum class BackspaceGesture { NONE, SWIPE_UP, SWIPE_DOWN, SWIPE_RIGHT }
+    private enum class BackspaceGesture { NONE, SWIPE_UP, SWIPE_DOWN, SWIPE_LEFT, SWIPE_RIGHT }
     private var backspaceTouchDownX = 0f
     private var backspaceTouchDownY = 0f
     private var backspaceGesture = BackspaceGesture.NONE
@@ -398,6 +397,7 @@ class DictatorIME : InputMethodService() {
                 val dy = event.rawY - backspaceTouchDownY
                 val newGesture = when {
                     dx > swipeThresholdPx -> BackspaceGesture.SWIPE_RIGHT
+                    dx < -swipeThresholdPx -> BackspaceGesture.SWIPE_LEFT
                     dy < -swipeThresholdPx -> BackspaceGesture.SWIPE_UP
                     dy > swipeThresholdPx -> BackspaceGesture.SWIPE_DOWN
                     else -> BackspaceGesture.NONE
@@ -416,8 +416,8 @@ class DictatorIME : InputMethodService() {
                 when (backspaceGesture) {
                     BackspaceGesture.SWIPE_UP -> {
                         val ic = currentInputConnection
-                        ic?.commitText(" ", 1)
-                        Log.d(TAG, "Swipe up: inserted space")
+                        ic?.commitText(".", 1)
+                        Log.d(TAG, "Swipe up: inserted period")
                     }
                     BackspaceGesture.SWIPE_DOWN -> {
                         val ic = currentInputConnection
@@ -426,8 +426,13 @@ class DictatorIME : InputMethodService() {
                     }
                     BackspaceGesture.SWIPE_RIGHT -> {
                         val ic = currentInputConnection
-                        ic?.commitText(".", 1)
-                        Log.d(TAG, "Swipe right: inserted period")
+                        ic?.commitText(" ", 1)
+                        Log.d(TAG, "Swipe right: inserted space")
+                    }
+                    BackspaceGesture.SWIPE_LEFT -> {
+                        val ic = currentInputConnection
+                        ic?.commitText("?", 1)
+                        Log.d(TAG, "Swipe left: inserted question mark")
                     }
                     BackspaceGesture.NONE -> {
                         // Quick tap — delete now if hold timer hasn't fired yet
