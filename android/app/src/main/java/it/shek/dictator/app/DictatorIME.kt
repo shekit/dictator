@@ -96,7 +96,7 @@ class DictatorIME : InputMethodService() {
         }
     }
 
-    private enum class BackspaceGesture { NONE, SWIPE_UP, SWIPE_DOWN, SWIPE_LEFT }
+    private enum class BackspaceGesture { NONE, SWIPE_UP, SWIPE_DOWN, SWIPE_RIGHT }
     private var backspaceTouchDownX = 0f
     private var backspaceTouchDownY = 0f
     private var backspaceGesture = BackspaceGesture.NONE
@@ -395,7 +395,7 @@ class DictatorIME : InputMethodService() {
                 val dx = event.rawX - backspaceTouchDownX
                 val dy = event.rawY - backspaceTouchDownY
                 val newGesture = when {
-                    dx < -swipeThresholdPx -> BackspaceGesture.SWIPE_LEFT
+                    dx > swipeThresholdPx -> BackspaceGesture.SWIPE_RIGHT
                     dy < -swipeThresholdPx -> BackspaceGesture.SWIPE_UP
                     dy > swipeThresholdPx -> BackspaceGesture.SWIPE_DOWN
                     else -> BackspaceGesture.NONE
@@ -422,10 +422,10 @@ class DictatorIME : InputMethodService() {
                         ic?.commitText("\n", 1)
                         Log.d(TAG, "Swipe down: inserted newline")
                     }
-                    BackspaceGesture.SWIPE_LEFT -> {
+                    BackspaceGesture.SWIPE_RIGHT -> {
                         val ic = currentInputConnection
                         ic?.commitText(".", 1)
-                        Log.d(TAG, "Swipe left: inserted period")
+                        Log.d(TAG, "Swipe right: inserted period")
                     }
                     BackspaceGesture.NONE -> {
                         // Quick tap — delete now if hold timer hasn't fired yet

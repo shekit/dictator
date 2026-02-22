@@ -50,7 +50,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Backspace button with swipe hints: up=space, down=enter, left=period -->
+    <!-- Backspace button with swipe hints: up=space, down=enter, right=period -->
     <LinearLayout
         android:id="@+id/backspaceContainer"
         android:layout_width="wrap_content"
@@ -61,38 +61,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@id/micButton"
         app:layout_constraintBottom_toBottomOf="@id/micButton">
-
-        <!-- Left swipe hint: period -->
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginEnd="2dp">
-
-            <TextView
-                android:id="@+id/hintPeriod"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="."
-                android:textColor="@color/text_secondary"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:alpha="0.5"
-                android:includeFontPadding="false"
-                android:layout_marginEnd="1dp" />
-
-            <TextView
-                android:id="@+id/hintArrowLeft"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="←"
-                android:textColor="@color/text_secondary"
-                android:textSize="10sp"
-                android:alpha="0.35"
-                android:includeFontPadding="false" />
-
-        </LinearLayout>
 
         <!-- Vertical column: space/up hints, button, down/enter hints -->
         <LinearLayout
@@ -129,7 +97,7 @@
                 android:layout_height="48dp"
                 android:src="@drawable/ic_backspace"
                 android:background="@drawable/side_button_background"
-                android:contentDescription="Delete word, slide up for space, slide down for enter, slide left for period"
+                android:contentDescription="Delete word, slide up for space, slide down for enter, slide right for period"
                 android:scaleType="center" />
 
             <TextView
@@ -153,6 +121,38 @@
                 android:alpha="0.5"
                 android:includeFontPadding="false"
                 android:layout_marginTop="1dp" />
+
+        </LinearLayout>
+
+        <!-- Right swipe hint: period -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginStart="2dp">
+
+            <TextView
+                android:id="@+id/hintArrowRight"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="→"
+                android:textColor="@color/text_secondary"
+                android:textSize="10sp"
+                android:alpha="0.35"
+                android:includeFontPadding="false" />
+
+            <TextView
+                android:id="@+id/hintPeriod"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="."
+                android:textColor="@color/text_secondary"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:alpha="0.5"
+                android:includeFontPadding="false"
+                android:layout_marginStart="1dp" />
 
         </LinearLayout>
 
