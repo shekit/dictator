@@ -21,6 +21,7 @@ import android.view.View
 import android.widget.ImageButton
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import kotlinx.coroutines.*
 
 /**
  * Dictator Input Method Service - a minimal dictation keyboard.
@@ -28,6 +29,10 @@ import androidx.core.content.ContextCompat
  * Two recording modes (configurable in main app settings):
  * - Hold-to-talk (default): press and hold mic, speak, release to stop.
  * - Tap-to-toggle: tap to start, tap again to stop.
+ *
+ * Two STT engines (configurable in main app settings):
+ * - SpeechRecognizer (default): Android's built-in speech recognition.
+ * - Whisper: On-device whisper.cpp model. Works fully offline.
  */
 class DictatorIME : InputMethodService() {
 
@@ -35,6 +40,9 @@ class DictatorIME : InputMethodService() {
         private const val TAG = "DictatorIME"
         const val PREFS_NAME = "dictator_prefs"
         const val KEY_TAP_MODE = "tap_mode"
+        const val KEY_STT_ENGINE = "stt_engine"
+        const val STT_SPEECH_RECOGNIZER = "speech_recognizer"
+        const val STT_WHISPER = "whisper"
     }
 
     enum class State {
@@ -44,6 +52,7 @@ class DictatorIME : InputMethodService() {
     }
 
     private var isTapMode = false
+    private var sttEngine = STT_SPEECH_RECOGNIZER
     private var state = State.IDLE
     // Tracks whether the user still wants to record (hasn't lifted finger / tapped stop).
     // SpeechRecognizer may auto-stop on silence, but we auto-restart if this is true.
@@ -56,6 +65,11 @@ class DictatorIME : InputMethodService() {
 
     private var speechRecognizer: SpeechRecognizer? = null
 
+    // Whisper engine
+    private var whisperTranscriber: WhisperTranscriber? = null
+    private var whisperModelLoading = false
+    private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+
     // Backspace repeat-on-hold with acceleration
     private val backspaceHandler = Handler(Looper.getMainLooper())
     private val backspaceInitialDelay = 400L
@@ -63,10 +77,8 @@ class DictatorIME : InputMethodService() {
     private val backspaceMinInterval = 40L
     private val backspaceAccelStep = 20L // ms faster each repeat
     private var backspaceCurrentInterval = backspaceStartInterval
-    private var backspaceRepeated = false
     private val backspaceRepeatRunnable: Runnable = object : Runnable {
         override fun run() {
-            backspaceRepeated = true
             deleteWord()
             if (backspaceCurrentInterval > backspaceMinInterval) {
                 backspaceCurrentInterval -= backspaceAccelStep
@@ -100,21 +112,45 @@ class DictatorIME : InputMethodService() {
         backspaceButton?.setOnTouchListener { _, event -> onBackspaceTouch(event) }
 
         loadSettings()
-        initSpeechRecognizer()
+
+        if (sttEngine == STT_SPEECH_RECOGNIZER) {
+            initSpeechRecognizer()
+        } else {
+            loadWhisperModelAsync()
+        }
+
         updateUI()
         return view
     }
 
     override fun onStartInputView(info: android.view.inputmethod.EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
+        val previousEngine = sttEngine
         loadSettings()
+
+        // If engine changed, re-initialize
+        if (previousEngine != sttEngine) {
+            if (sttEngine == STT_SPEECH_RECOGNIZER) {
+                whisperTranscriber?.release()
+                whisperTranscriber = null
+                initSpeechRecognizer()
+            } else {
+                speechRecognizer?.destroy()
+                speechRecognizer = null
+                loadWhisperModelAsync()
+            }
+        }
+
         updateUI()
     }
 
     private fun loadSettings() {
         val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         isTapMode = prefs.getBoolean(KEY_TAP_MODE, false)
+        sttEngine = prefs.getString(KEY_STT_ENGINE, STT_SPEECH_RECOGNIZER) ?: STT_SPEECH_RECOGNIZER
     }
+
+    // --- SpeechRecognizer engine ---
 
     private fun initSpeechRecognizer() {
         speechRecognizer?.destroy()
@@ -122,13 +158,11 @@ class DictatorIME : InputMethodService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             SpeechRecognizer.isOnDeviceRecognitionAvailable(this)
         ) {
-            // API 33+: guaranteed on-device, no data sent to Google
             speechRecognizer = SpeechRecognizer.createOnDeviceSpeechRecognizer(this).apply {
                 setRecognitionListener(recognitionListener)
             }
             Log.d(TAG, "SpeechRecognizer ready (on-device)")
         } else if (SpeechRecognizer.isRecognitionAvailable(this)) {
-            // Older devices: use standard recognizer with offline preference
             speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
                 setRecognitionListener(recognitionListener)
             }
@@ -156,7 +190,6 @@ class DictatorIME : InputMethodService() {
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
             putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
-            // Longer silence thresholds so natural pauses don't cut recording
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 5000L)
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 4000L)
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 1000L)
@@ -172,15 +205,12 @@ class DictatorIME : InputMethodService() {
             Log.d(TAG, "Speech detected")
         }
 
-        override fun onRmsChanged(rmsdB: Float) {
-            // Audio level changes - could be used for visual feedback later
-        }
+        override fun onRmsChanged(rmsdB: Float) {}
 
         override fun onBufferReceived(buffer: ByteArray?) {}
 
         override fun onEndOfSpeech() {
             Log.d(TAG, "End of speech detected (userWantsRecording=$userWantsRecording)")
-            // Don't transition to PROCESSING if we plan to auto-restart
             if (!userWantsRecording && state == State.RECORDING) {
                 state = State.PROCESSING
                 updateUI()
@@ -206,8 +236,6 @@ class DictatorIME : InputMethodService() {
                     error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT
 
             if (userWantsRecording && issilenceError) {
-                // User is still holding/recording but there was just silence.
-                // Restart listening instead of stopping.
                 Log.d(TAG, "Auto-restarting SpeechRecognizer after silence")
                 state = State.RECORDING
                 speechRecognizer?.startListening(createRecognizerIntent())
@@ -228,9 +256,6 @@ class DictatorIME : InputMethodService() {
             }
 
             if (userWantsRecording) {
-                // SpeechRecognizer auto-stopped on silence, but user is still
-                // holding mic (hold mode) or hasn't tapped stop (tap mode).
-                // Space between chunks is handled by insertText's auto-space logic.
                 Log.d(TAG, "Auto-restarting SpeechRecognizer (user still recording)")
                 state = State.RECORDING
                 speechRecognizer?.startListening(createRecognizerIntent())
@@ -256,6 +281,83 @@ class DictatorIME : InputMethodService() {
 
         override fun onEvent(eventType: Int, params: Bundle?) {}
     }
+
+    // --- Whisper engine ---
+
+    private fun loadWhisperModelAsync() {
+        val modelManager = ModelManager(this)
+        if (!modelManager.isModelDownloaded) {
+            Log.d(TAG, "Whisper model not downloaded")
+            return
+        }
+
+        if (whisperTranscriber?.isModelLoaded == true) {
+            Log.d(TAG, "Whisper model already loaded")
+            return
+        }
+
+        if (whisperModelLoading) return
+        whisperModelLoading = true
+
+        serviceScope.launch(Dispatchers.IO) {
+            val transcriber = WhisperTranscriber()
+            val loaded = transcriber.loadModel(modelManager.modelFile.absolutePath)
+            withContext(Dispatchers.Main) {
+                whisperModelLoading = false
+                if (loaded) {
+                    whisperTranscriber = transcriber
+                    Log.d(TAG, "Whisper model loaded")
+                } else {
+                    Log.e(TAG, "Failed to load Whisper model")
+                }
+            }
+        }
+    }
+
+    private fun startWhisperRecording() {
+        val modelManager = ModelManager(this)
+        if (!modelManager.isModelDownloaded) {
+            Log.w(TAG, "Whisper model not downloaded")
+            statusText?.text = getString(R.string.model_not_downloaded)
+            return
+        }
+
+        if (whisperTranscriber == null || whisperTranscriber?.isModelLoaded != true) {
+            if (!whisperModelLoading) {
+                loadWhisperModelAsync()
+            }
+            statusText?.text = getString(R.string.loading_model)
+            Log.d(TAG, "Whisper model loading, try again shortly")
+            return
+        }
+
+        Log.d(TAG, "Whisper recording started (mode: ${if (isTapMode) "tap" else "hold"})")
+        micButton?.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+        userWantsRecording = true
+        state = State.RECORDING
+        updateUI()
+        whisperTranscriber?.startRecording()
+    }
+
+    private fun stopWhisperRecording() {
+        Log.d(TAG, "Whisper recording stopped")
+        micButton?.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+        userWantsRecording = false
+        state = State.PROCESSING
+        updateUI()
+
+        serviceScope.launch {
+            val text = whisperTranscriber?.stopAndTranscribe()?.trim() ?: ""
+            Log.d(TAG, "Whisper result: '$text'")
+            if (text.isNotEmpty()) {
+                insertText(text)
+            }
+            state = State.IDLE
+            updateUI()
+        }
+    }
+
+    // --- Common recording control ---
 
     private fun onMicTouch(event: MotionEvent): Boolean {
         if (state == State.PROCESSING) return true
@@ -292,6 +394,14 @@ class DictatorIME : InputMethodService() {
             return
         }
 
+        if (sttEngine == STT_WHISPER) {
+            startWhisperRecording()
+        } else {
+            startSpeechRecognizerRecording()
+        }
+    }
+
+    private fun startSpeechRecognizerRecording() {
         if (speechRecognizer == null) {
             initSpeechRecognizer()
         }
@@ -311,6 +421,14 @@ class DictatorIME : InputMethodService() {
     }
 
     private fun stopRecording() {
+        if (sttEngine == STT_WHISPER) {
+            stopWhisperRecording()
+        } else {
+            stopSpeechRecognizerRecording()
+        }
+    }
+
+    private fun stopSpeechRecognizerRecording() {
         Log.d(TAG, "Recording stopped (mode: ${if (isTapMode) "tap" else "hold"})")
         micButton?.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
         userWantsRecording = false
@@ -351,13 +469,11 @@ class DictatorIME : InputMethodService() {
                 backspaceTouchDownY = event.rawY
                 backspaceGesture = BackspaceGesture.NONE
                 backspaceDeletedText = null
-                backspaceRepeated = false
                 backspaceCurrentInterval = backspaceStartInterval
                 backspaceDeletedText = deleteWord()
                 backspaceHandler.postDelayed(backspaceRepeatRunnable, backspaceInitialDelay)
             }
             MotionEvent.ACTION_MOVE -> {
-                if (backspaceRepeated) return true // repeats fired, no swipe
                 val dy = event.rawY - backspaceTouchDownY
                 val newGesture = when {
                     dy < -swipeThresholdPx -> BackspaceGesture.SWIPE_UP
@@ -365,7 +481,6 @@ class DictatorIME : InputMethodService() {
                     else -> BackspaceGesture.NONE
                 }
                 if (newGesture != BackspaceGesture.NONE && backspaceGesture == BackspaceGesture.NONE) {
-                    // Just crossed threshold — cancel backspace and undo initial delete
                     backspaceHandler.removeCallbacks(backspaceRepeatRunnable)
                     undoInitialDelete()
                     backspaceGesture = newGesture
@@ -412,7 +527,6 @@ class DictatorIME : InputMethodService() {
     private fun deleteWord(): String? {
         val ic = currentInputConnection ?: return null
 
-        // If there's a selection, delete it instead of word-backspace
         val selected = ic.getSelectedText(0)
         if (selected != null && selected.isNotEmpty()) {
             ic.commitText("", 1)
@@ -472,6 +586,9 @@ class DictatorIME : InputMethodService() {
         backspaceHandler.removeCallbacks(backspaceRepeatRunnable)
         speechRecognizer?.destroy()
         speechRecognizer = null
+        whisperTranscriber?.release()
+        whisperTranscriber = null
+        serviceScope.cancel()
         super.onDestroy()
     }
 }

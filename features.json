@@ -1174,7 +1174,7 @@
             "Switch back to SpeechRecognizer in settings, dictation still works",
             "Enable airplane mode, Whisper still works offline"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "16.2",
@@ -1185,7 +1185,7 @@
             "Model size shown in settings",
             "Option to delete/re-download model"
           ],
-          "passes": false
+          "passes": true
         }
       ]
     },

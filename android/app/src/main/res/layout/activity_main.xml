@@ -130,6 +130,119 @@
 
         </LinearLayout>
 
+        <!-- Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#FF3A3A3C"
+            android:layout_marginTop="12dp" />
+
+        <!-- Speech Engine section -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Speech Engine"
+            android:textColor="#FFFFFFFF"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginTop="24dp" />
+
+        <RadioGroup
+            android:id="@+id/sttEngineGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp">
+
+            <RadioButton
+                android:id="@+id/radioSpeechRecognizer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Speech Recognizer (default)"
+                android:textColor="#FFFFFFFF"
+                android:textSize="15sp"
+                android:buttonTint="#FF3478F6"
+                android:paddingStart="8dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Uses Android\u2019s built-in speech recognition. Fast, accurate, may need internet on older devices."
+                android:textColor="#FF8E8E93"
+                android:textSize="13sp"
+                android:paddingStart="40dp"
+                android:paddingBottom="8dp" />
+
+            <RadioButton
+                android:id="@+id/radioWhisper"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Whisper (offline)"
+                android:textColor="#FFFFFFFF"
+                android:textSize="15sp"
+                android:buttonTint="#FF3478F6"
+                android:paddingStart="8dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="On-device Whisper model. Works in airplane mode. Requires one-time model download."
+                android:textColor="#FF8E8E93"
+                android:textSize="13sp"
+                android:paddingStart="40dp"
+                android:paddingBottom="8dp" />
+
+        </RadioGroup>
+
+        <!-- Whisper model section (shown when Whisper selected) -->
+        <LinearLayout
+            android:id="@+id/whisperModelSection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#FF2C2C2E"
+            android:padding="16dp"
+            android:layout_marginTop="12dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Whisper Model"
+                android:textColor="#FFFFFFFF"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/modelStatusText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Not downloaded"
+                android:textColor="#FF8E8E93"
+                android:textSize="14sp"
+                android:layout_marginTop="8dp" />
+
+            <ProgressBar
+                android:id="@+id/modelProgressBar"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:progressTint="#FF3478F6"
+                android:visibility="gone" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/modelActionButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Download Model (~75 MB)"
+                android:layout_marginTop="12dp" />
+
+        </LinearLayout>
+
     </LinearLayout>
 
 </ScrollView>

@@ -796,4 +796,76 @@ BUILD SUCCESSFUL
 
 ### Current State:
 - Phase 15 complete (6/6 features passing)
-- Next: Phase 16 (Android Main App & Cloud LLM)
+- Next: Phase 16 (Android Whisper Option)
+
+---
+
+## Session: 2026-02-21 - Phase 16 Complete (Android Whisper Option)
+
+### Changes Made:
+1. **Whisper.cpp native integration via CMake + NDK**
+   - CMakeLists.txt uses FetchContent to download whisper.cpp v1.7.3 at build time
+   - JNI wrapper (whisper-jni.cpp) exposes initContext, transcribe, freeContext
+   - Builds for arm64-v8a architecture
+   - Native library: libwhisper-jni.so (3.3MB)
+
+2. **WhisperTranscriber (Kotlin)**
+   - Records raw PCM audio at 16kHz mono via AudioRecord
+   - Buffers audio in-memory during recording
+   - On stop, converts short[] to float[] and passes to whisper.cpp for transcription
+   - Background transcription via coroutines (non-blocking UI)
+   - Minimum 0.5s recording threshold to avoid empty results
+
+3. **ModelManager (Kotlin)**
+   - Downloads ggml-tiny.en.bin (~75MB) from Hugging Face
+   - Stores in app's internal filesDir/whisper/
+   - Atomic download: writes to .tmp file, renames on completion
+   - Progress callback for UI updates
+   - Delete and re-download support
+
+4. **Settings UI (MainActivity)**
+   - Radio group: Speech Recognizer (default) vs Whisper (offline)
+   - Whisper model section (visible when Whisper selected):
+     - Model status: "Not downloaded" / "Whisper Tiny (English) (75 MB)"
+     - Download button with progress bar
+     - Delete model button
+   - All settings persisted in SharedPreferences
+
+5. **DictatorIME integration**
+   - Reads stt_engine setting from SharedPreferences
+   - SpeechRecognizer mode: unchanged behavior
+   - Whisper mode: AudioRecord → WhisperTranscriber → commitText
+   - Lazy model loading: loads in background when keyboard appears
+   - Hot-switching: detects engine change on each input view start
+   - Proper cleanup on destroy (releases native context)
+
+### Files Created:
+- android/app/src/main/cpp/CMakeLists.txt
+- android/app/src/main/cpp/whisper-jni.cpp
+- android/app/src/main/java/it/shek/dictator/app/WhisperLib.kt
+- android/app/src/main/java/it/shek/dictator/app/WhisperTranscriber.kt
+- android/app/src/main/java/it/shek/dictator/app/ModelManager.kt
+
+### Files Modified:
+- android/app/build.gradle.kts (NDK, CMake, coroutines dependency)
+- android/app/src/main/java/it/shek/dictator/app/DictatorIME.kt (dual STT engine support)
+- android/app/src/main/java/it/shek/dictator/app/MainActivity.kt (STT engine + model management UI)
+- android/app/src/main/res/layout/activity_main.xml (settings layout updates)
+- android/app/src/main/res/values/strings.xml (new strings)
+
+### Build Status:
+BUILD SUCCESSFUL (1m 14s, first build downloads NDK + CMake + whisper.cpp)
+
+### Verification:
+- 16.1: Settings has Speech Recognizer / Whisper radio selection ✅
+- 16.1: Whisper transcription via whisper.cpp JNI works ✅
+- 16.1: SpeechRecognizer still works when switched back ✅
+- 16.1: Whisper works offline (no network dependency) ✅
+- 16.2: Model download from Hugging Face with progress bar ✅
+- 16.2: Cached model reused on subsequent runs ✅
+- 16.2: Model size shown in settings when downloaded ✅
+- 16.2: Delete/re-download button in settings ✅
+
+### Current State:
+- Phase 16 complete (2/2 features passing)
+- Next: Phase 17 (Android Polish) - 17.4 remaining
