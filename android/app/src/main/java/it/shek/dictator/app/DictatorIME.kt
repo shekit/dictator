@@ -12,13 +12,19 @@ import android.os.Looper
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import android.graphics.Color
+import android.graphics.Typeface
 import android.inputmethodservice.InputMethodService
 import android.util.Log
 import android.util.TypedValue
+import android.view.Gravity
 import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.View
+import android.view.inputmethod.CompletionInfo
+import android.widget.HorizontalScrollView
 import android.widget.ImageButton
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import java.util.concurrent.Executors
@@ -120,6 +126,59 @@ class DictatorIME : InputMethodService() {
 
         updateUI()
         return view
+    }
+
+    private var candidatesContainer: LinearLayout? = null
+
+    override fun onCreateCandidatesView(): View {
+        val scrollView = HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            setBackgroundColor(Color.parseColor("#1A1A1A"))
+        }
+        candidatesContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            val pad = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 4f, resources.displayMetrics).toInt()
+            setPadding(pad, pad, pad, pad)
+        }
+        scrollView.addView(candidatesContainer)
+        setCandidatesViewShown(false)
+        return scrollView
+    }
+
+    override fun onDisplayCompletions(completions: Array<out CompletionInfo>?) {
+        super.onDisplayCompletions(completions)
+        candidatesContainer?.removeAllViews()
+        if (completions.isNullOrEmpty()) {
+            setCandidatesViewShown(false)
+            return
+        }
+        val dpToPx = { dp: Float -> TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, resources.displayMetrics).toInt() }
+        for (completion in completions) {
+            val text = completion.text ?: continue
+            val chip = TextView(this).apply {
+                this.text = text
+                setTextColor(Color.WHITE)
+                textSize = 14f
+                typeface = Typeface.DEFAULT
+                setBackgroundColor(Color.parseColor("#333333"))
+                val hPad = dpToPx(12f)
+                val vPad = dpToPx(6f)
+                setPadding(hPad, vPad, hPad, vPad)
+                val params = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                params.marginEnd = dpToPx(6f)
+                layoutParams = params
+                setOnClickListener {
+                    currentInputConnection?.commitCompletion(completion)
+                    setCandidatesViewShown(false)
+                }
+            }
+            candidatesContainer?.addView(chip)
+        }
+        setCandidatesViewShown(true)
     }
 
     override fun onStartInputView(info: android.view.inputmethod.EditorInfo?, restarting: Boolean) {
