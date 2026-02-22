@@ -9,7 +9,4 @@
     <string name="mic_permission_needed">Microphone permission required</string>
     <string name="speech_not_available">Speech recognition not available</string>
     <string name="speech_error">Speech recognition error</string>
-    <string name="loading_model">Loading model&#8230;</string>
-    <string name="model_not_downloaded">Download Whisper model first</string>
-    <string name="downloading_model">Downloading model&#8230;</string>
 </resources>

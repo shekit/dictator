@@ -21,7 +21,6 @@ import android.view.View
 import android.widget.ImageButton
 import android.widget.TextView
 import androidx.core.content.ContextCompat
-import kotlinx.coroutines.*
 
 /**
  * Dictator Input Method Service - a minimal dictation keyboard.
@@ -29,10 +28,6 @@ import kotlinx.coroutines.*
  * Two recording modes (configurable in main app settings):
  * - Hold-to-talk (default): press and hold mic, speak, release to stop.
  * - Tap-to-toggle: tap to start, tap again to stop.
- *
- * Two STT engines (configurable in main app settings):
- * - SpeechRecognizer (default): Android's built-in speech recognition.
- * - Whisper: On-device whisper.cpp model. Works fully offline.
  */
 class DictatorIME : InputMethodService() {
 
@@ -40,9 +35,6 @@ class DictatorIME : InputMethodService() {
         private const val TAG = "DictatorIME"
         const val PREFS_NAME = "dictator_prefs"
         const val KEY_TAP_MODE = "tap_mode"
-        const val KEY_STT_ENGINE = "stt_engine"
-        const val STT_SPEECH_RECOGNIZER = "speech_recognizer"
-        const val STT_WHISPER = "whisper"
     }
 
     enum class State {
@@ -52,7 +44,6 @@ class DictatorIME : InputMethodService() {
     }
 
     private var isTapMode = false
-    private var sttEngine = STT_SPEECH_RECOGNIZER
     private var state = State.IDLE
     // Tracks whether the user still wants to record (hasn't lifted finger / tapped stop).
     // SpeechRecognizer may auto-stop on silence, but we auto-restart if this is true.
@@ -64,12 +55,6 @@ class DictatorIME : InputMethodService() {
     private var statusText: TextView? = null
 
     private var speechRecognizer: SpeechRecognizer? = null
-
-    // Whisper engine
-    private var whisperTranscriber: WhisperTranscriber? = null
-    private var whisperModelLoading = false
-    private var pendingWhisperRecord = false // auto-start recording after model loads
-    private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     // Backspace: deferred delete with swipe gestures (up=space, down=enter)
     //
@@ -125,12 +110,7 @@ class DictatorIME : InputMethodService() {
         backspaceButton?.setOnTouchListener { _, event -> onBackspaceTouch(event) }
 
         loadSettings()
-
-        if (sttEngine == STT_SPEECH_RECOGNIZER) {
-            initSpeechRecognizer()
-        } else {
-            loadWhisperModelAsync()
-        }
+        initSpeechRecognizer()
 
         updateUI()
         return view
@@ -138,32 +118,14 @@ class DictatorIME : InputMethodService() {
 
     override fun onStartInputView(info: android.view.inputmethod.EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
-        val previousEngine = sttEngine
         loadSettings()
-
-        // If engine changed, re-initialize
-        if (previousEngine != sttEngine) {
-            if (sttEngine == STT_SPEECH_RECOGNIZER) {
-                whisperTranscriber?.release()
-                whisperTranscriber = null
-                initSpeechRecognizer()
-            } else {
-                speechRecognizer?.destroy()
-                speechRecognizer = null
-                loadWhisperModelAsync()
-            }
-        }
-
         updateUI()
     }
 
     private fun loadSettings() {
         val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         isTapMode = prefs.getBoolean(KEY_TAP_MODE, false)
-        sttEngine = prefs.getString(KEY_STT_ENGINE, STT_SPEECH_RECOGNIZER) ?: STT_SPEECH_RECOGNIZER
     }
-
-    // --- SpeechRecognizer engine ---
 
     private fun initSpeechRecognizer() {
         speechRecognizer?.destroy()
@@ -295,105 +257,7 @@ class DictatorIME : InputMethodService() {
         override fun onEvent(eventType: Int, params: Bundle?) {}
     }
 
-    // --- Whisper engine ---
-
-    private fun loadWhisperModelAsync() {
-        val modelManager = ModelManager(this)
-        if (!modelManager.isModelDownloaded) {
-            Log.d(TAG, "Whisper model not downloaded")
-            return
-        }
-
-        if (whisperTranscriber?.isModelLoaded == true) {
-            Log.d(TAG, "Whisper model already loaded")
-            return
-        }
-
-        if (whisperModelLoading) return
-        whisperModelLoading = true
-
-        serviceScope.launch(Dispatchers.IO) {
-            val transcriber = WhisperTranscriber()
-            val loaded = transcriber.loadModel(modelManager.modelFile.absolutePath)
-            withContext(Dispatchers.Main) {
-                whisperModelLoading = false
-                if (loaded) {
-                    whisperTranscriber = transcriber
-                    Log.d(TAG, "Whisper model loaded")
-                    // Auto-start recording if user tried to record while model was loading
-                    if (pendingWhisperRecord) {
-                        pendingWhisperRecord = false
-                        Log.d(TAG, "Auto-starting Whisper recording after model load")
-                        startWhisperRecording()
-                    }
-                } else {
-                    pendingWhisperRecord = false
-                    Log.e(TAG, "Failed to load Whisper model")
-                }
-            }
-        }
-    }
-
-    private fun startWhisperRecording() {
-        val modelManager = ModelManager(this)
-        if (!modelManager.isModelDownloaded) {
-            Log.w(TAG, "Whisper model not downloaded")
-            statusText?.text = getString(R.string.model_not_downloaded)
-            return
-        }
-
-        if (whisperTranscriber == null || whisperTranscriber?.isModelLoaded != true) {
-            if (!whisperModelLoading) {
-                loadWhisperModelAsync()
-            }
-            // Queue recording to auto-start when model finishes loading
-            pendingWhisperRecord = true
-            statusText?.text = getString(R.string.loading_model)
-            Log.d(TAG, "Whisper model loading, will auto-start recording when ready")
-            return
-        }
-
-        Log.d(TAG, "Whisper recording started (mode: ${if (isTapMode) "tap" else "hold"})")
-        micButton?.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-        userWantsRecording = true
-        state = State.RECORDING
-        updateUI()
-        whisperTranscriber?.startRecording()
-    }
-
-    private fun stopWhisperRecording() {
-        Log.d(TAG, "Whisper recording stopped")
-        pendingWhisperRecord = false
-        micButton?.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-        userWantsRecording = false
-
-        // If model was still loading when user released, nothing to transcribe
-        if (whisperTranscriber?.isRecording != true) {
-            state = State.IDLE
-            updateUI()
-            return
-        }
-
-        state = State.PROCESSING
-        updateUI()
-
-        serviceScope.launch {
-            try {
-                val text = whisperTranscriber?.stopAndTranscribe()?.trim() ?: ""
-                Log.d(TAG, "Whisper result: '$text'")
-                if (text.isNotEmpty()) {
-                    insertText(text)
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Whisper transcription failed", e)
-            } finally {
-                state = State.IDLE
-                updateUI()
-            }
-        }
-    }
-
-    // --- Common recording control ---
+    // --- Recording control ---
 
     private fun onMicTouch(event: MotionEvent): Boolean {
         if (state == State.PROCESSING) return true
@@ -430,14 +294,6 @@ class DictatorIME : InputMethodService() {
             return
         }
 
-        if (sttEngine == STT_WHISPER) {
-            startWhisperRecording()
-        } else {
-            startSpeechRecognizerRecording()
-        }
-    }
-
-    private fun startSpeechRecognizerRecording() {
         if (speechRecognizer == null) {
             initSpeechRecognizer()
         }
@@ -457,14 +313,6 @@ class DictatorIME : InputMethodService() {
     }
 
     private fun stopRecording() {
-        if (sttEngine == STT_WHISPER) {
-            stopWhisperRecording()
-        } else {
-            stopSpeechRecognizerRecording()
-        }
-    }
-
-    private fun stopSpeechRecognizerRecording() {
         Log.d(TAG, "Recording stopped (mode: ${if (isTapMode) "tap" else "hold"})")
         micButton?.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
         userWantsRecording = false
@@ -615,9 +463,6 @@ class DictatorIME : InputMethodService() {
         backspaceHandler.removeCallbacks(backspaceRepeatRunnable)
         speechRecognizer?.destroy()
         speechRecognizer = null
-        whisperTranscriber?.release()
-        whisperTranscriber = null
-        serviceScope.cancel()
         super.onDestroy()
     }
 }
