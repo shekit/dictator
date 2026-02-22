@@ -119,22 +119,26 @@ class DictatorIME : InputMethodService() {
 
     private fun deleteWord() {
         val ic = currentInputConnection ?: return
-        // Select the word before the cursor, then delete it
         val before = ic.getTextBeforeCursor(100, 0) ?: return
         if (before.isEmpty()) return
 
         val text = before.toString()
-        // Find how many characters to delete: back to the start of the previous word
-        var i = text.length
-        // Skip trailing spaces
-        while (i > 0 && text[i - 1] == ' ') i--
-        // Skip the word characters
-        while (i > 0 && text[i - 1] != ' ') i--
-        val charsToDelete = text.length - i
+        val end = text.length
 
-        if (charsToDelete > 0) {
+        // If trailing spaces exist, delete just the spaces
+        if (text[end - 1] == ' ') {
+            var i = end
+            while (i > 0 && text[i - 1] == ' ') i--
+            val spacesToDelete = end - i
+            ic.deleteSurroundingText(spacesToDelete, 0)
+            Log.d(TAG, "Deleted $spacesToDelete spaces")
+        } else {
+            // No trailing spaces - delete the word back to the previous space
+            var i = end
+            while (i > 0 && text[i - 1] != ' ') i--
+            val charsToDelete = end - i
             ic.deleteSurroundingText(charsToDelete, 0)
-            Log.d(TAG, "Deleted $charsToDelete chars (word backspace)")
+            Log.d(TAG, "Deleted $charsToDelete chars (word)")
         }
     }
 
