@@ -70,7 +70,8 @@
             android:textColor="@color/text_secondary"
             android:textSize="16sp"
             android:alpha="0.5"
-            android:includeFontPadding="false" />
+            android:includeFontPadding="false"
+            android:layout_marginBottom="1dp" />
 
         <TextView
             android:id="@+id/hintArrowUp"
@@ -80,7 +81,8 @@
             android:textColor="@color/text_secondary"
             android:textSize="10sp"
             android:alpha="0.35"
-            android:includeFontPadding="false" />
+            android:includeFontPadding="false"
+            android:layout_marginBottom="2dp" />
 
         <ImageButton
             android:id="@+id/backspaceButton"
@@ -99,7 +101,8 @@
             android:textColor="@color/text_secondary"
             android:textSize="10sp"
             android:alpha="0.35"
-            android:includeFontPadding="false" />
+            android:includeFontPadding="false"
+            android:layout_marginTop="2dp" />
 
         <TextView
             android:id="@+id/hintEnter"
@@ -109,7 +112,8 @@
             android:textColor="@color/text_secondary"
             android:textSize="16sp"
             android:alpha="0.5"
-            android:includeFontPadding="false" />
+            android:includeFontPadding="false"
+            android:layout_marginTop="1dp" />
 
     </LinearLayout>
 
