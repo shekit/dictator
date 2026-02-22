@@ -127,7 +127,7 @@ During recording:
 
 **Key Android Components:**
 - `InputMethodService` subclass for the keyboard
-- Android `SpeechRecognizer` for STT (Phase 15), later replaced by Whisper.cpp (Phase 18)
+- Android `SpeechRecognizer` for STT (Phase 15), with Whisper.cpp as an alternative (Phase 18). User chooses STT engine in settings.
 - Keyboard has only two buttons: mic and globe (all settings live in the main app)
 - SharedPreferences for sharing settings between app and IME
 - No special permissions beyond RECORD_AUDIO
@@ -206,7 +206,7 @@ See `features.json` for full feature list and verification steps.
 | 15 | Dictation | SpeechRecognizer → InputConnection |
 | 16 | Main App & Cloud LLM | Onboarding, settings, OpenRouter |
 | 17 | Polish | Haptics, auto-stop, live preview, errors |
-| 18 | Whisper Migration | Swap SpeechRecognizer for Whisper.cpp |
+| 18 | Whisper Option | Add Whisper.cpp as alternative STT engine (user toggle) |
 
 ## File Structure
 

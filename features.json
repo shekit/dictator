@@ -1269,18 +1269,19 @@
     {
       "phase": 18,
       "platform": "android",
-      "name": "Android Whisper Migration",
-      "description": "Replace SpeechRecognizer with Whisper.cpp for fully offline on-device STT",
-      "testable_outcome": "Dictation works in airplane mode with no Google dependency",
+      "name": "Android Whisper Option",
+      "description": "Add Whisper.cpp as an alternative STT engine alongside SpeechRecognizer. User chooses STT engine in settings.",
+      "testable_outcome": "User can switch between SpeechRecognizer and Whisper in settings; Whisper works in airplane mode",
       "features": [
         {
           "id": "18.1",
-          "description": "Integrate Whisper.cpp for fully offline on-device STT",
+          "description": "Add Whisper.cpp as alternative STT engine (selectable in settings alongside SpeechRecognizer)",
           "verification": [
-            "Enable airplane mode",
-            "Dictate 'hello world'",
-            "Text appears correctly",
-            "No network requests made"
+            "Open settings, select Whisper as STT engine",
+            "Switch to Dictator keyboard, dictate 'hello world'",
+            "Text appears correctly using Whisper",
+            "Switch back to SpeechRecognizer in settings, dictation still works",
+            "Enable airplane mode, Whisper still works offline"
           ],
           "passes": false
         },
