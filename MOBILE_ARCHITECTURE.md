@@ -204,9 +204,9 @@ See `features.json` for full feature list and verification steps.
 |-------|------|------|
 | 14 | Keyboard Shell | IME with mic + globe buttons |
 | 15 | Dictation | SpeechRecognizer → InputConnection |
-| 16 | Main App & Cloud LLM | Onboarding, settings, OpenRouter |
+| 16 | Whisper Option | Add Whisper.cpp as alternative STT engine (user toggle) |
 | 17 | Polish | Haptics, auto-stop, live preview, errors |
-| 18 | Whisper Option | Add Whisper.cpp as alternative STT engine (user toggle) |
+| 18 | Main App & Cloud LLM | Onboarding, settings, OpenRouter |
 
 ## File Structure
 

@@ -14,6 +14,7 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.inputmethodservice.InputMethodService
 import android.util.Log
+import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.View
 import android.widget.ImageButton
@@ -295,6 +296,7 @@ class DictatorIME : InputMethodService() {
         }
 
         Log.d(TAG, "Recording started (mode: ${if (isTapMode) "tap" else "hold"})")
+        micButton?.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
         userWantsRecording = true
         state = State.RECORDING
         updateUI()
@@ -303,6 +305,7 @@ class DictatorIME : InputMethodService() {
 
     private fun stopRecording() {
         Log.d(TAG, "Recording stopped (mode: ${if (isTapMode) "tap" else "hold"})")
+        micButton?.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
         userWantsRecording = false
         state = State.PROCESSING
         updateUI()

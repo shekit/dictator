@@ -1160,58 +1160,30 @@
     {
       "phase": 16,
       "platform": "android",
-      "name": "Android Main App & Cloud LLM",
-      "description": "Main app for onboarding, settings, and OpenRouter cloud LLM integration",
-      "testable_outcome": "App guides setup, cloud LLM cleans dictated text",
+      "name": "Android Whisper Option",
+      "description": "Add Whisper.cpp as an alternative STT engine alongside SpeechRecognizer. User chooses STT engine in settings.",
+      "testable_outcome": "User can switch between SpeechRecognizer and Whisper in settings; Whisper works in airplane mode",
       "features": [
         {
           "id": "16.1",
-          "description": "Main Activity with onboarding flow",
+          "description": "Add Whisper.cpp as alternative STT engine (selectable in settings alongside SpeechRecognizer)",
           "verification": [
-            "Fresh install",
-            "App shows steps: enable keyboard, grant mic permission",
-            "Clear instructions guide user through setup"
+            "Open settings, select Whisper as STT engine",
+            "Switch to Dictator keyboard, dictate 'hello world'",
+            "Text appears correctly using Whisper",
+            "Switch back to SpeechRecognizer in settings, dictation still works",
+            "Enable airplane mode, Whisper still works offline"
           ],
           "passes": false
         },
         {
           "id": "16.2",
-          "description": "Settings screen with cloud LLM toggle and API key input",
+          "description": "Whisper model download and management",
           "verification": [
-            "Settings shows cloud LLM on/off toggle",
-            "Shows API key input field",
-            "Changes persist across app restart"
-          ],
-          "passes": false
-        },
-        {
-          "id": "16.3",
-          "description": "SharedPreferences shared between main app and IME",
-          "verification": [
-            "Change setting in main app",
-            "Open keyboard in another app",
-            "Keyboard uses new setting"
-          ],
-          "passes": false
-        },
-        {
-          "id": "16.4",
-          "description": "OpenRouter API integration for text cleanup",
-          "verification": [
-            "Cloud LLM enabled, API key set",
-            "Dictate 'um like hello'",
-            "Output is cleaned: 'Hello.'"
-          ],
-          "passes": false
-        },
-        {
-          "id": "16.5",
-          "description": "Graceful fallback when cloud API fails",
-          "verification": [
-            "Set invalid API key",
-            "Dictate text",
-            "Raw transcription inserted (no crash)",
-            "Error indicator briefly shown"
+            "First run downloads Whisper model",
+            "Subsequent runs use cached model",
+            "Model size shown in settings",
+            "Option to delete/re-download model"
           ],
           "passes": false
         }
@@ -1232,7 +1204,7 @@
             "Speak continuously",
             "See words appear in keyboard UI as you speak"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "17.2",
@@ -1242,7 +1214,7 @@
             "Speak, then stop speaking",
             "After ~2 seconds of silence, recording auto-stops"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "17.3",
@@ -1251,7 +1223,7 @@
             "Tap mic to start - feel vibration",
             "Tap to stop - feel different vibration"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "17.4",
@@ -1269,30 +1241,58 @@
     {
       "phase": 18,
       "platform": "android",
-      "name": "Android Whisper Option",
-      "description": "Add Whisper.cpp as an alternative STT engine alongside SpeechRecognizer. User chooses STT engine in settings.",
-      "testable_outcome": "User can switch between SpeechRecognizer and Whisper in settings; Whisper works in airplane mode",
+      "name": "Android Main App & Cloud LLM",
+      "description": "Main app for onboarding, settings, and OpenRouter cloud LLM integration",
+      "testable_outcome": "App guides setup, cloud LLM cleans dictated text",
       "features": [
         {
           "id": "18.1",
-          "description": "Add Whisper.cpp as alternative STT engine (selectable in settings alongside SpeechRecognizer)",
+          "description": "Main Activity with onboarding flow",
           "verification": [
-            "Open settings, select Whisper as STT engine",
-            "Switch to Dictator keyboard, dictate 'hello world'",
-            "Text appears correctly using Whisper",
-            "Switch back to SpeechRecognizer in settings, dictation still works",
-            "Enable airplane mode, Whisper still works offline"
+            "Fresh install",
+            "App shows steps: enable keyboard, grant mic permission",
+            "Clear instructions guide user through setup"
           ],
           "passes": false
         },
         {
           "id": "18.2",
-          "description": "Whisper model download and management",
+          "description": "Settings screen with cloud LLM toggle and API key input",
           "verification": [
-            "First run downloads Whisper model",
-            "Subsequent runs use cached model",
-            "Model size shown in settings",
-            "Option to delete/re-download model"
+            "Settings shows cloud LLM on/off toggle",
+            "Shows API key input field",
+            "Changes persist across app restart"
+          ],
+          "passes": false
+        },
+        {
+          "id": "18.3",
+          "description": "SharedPreferences shared between main app and IME",
+          "verification": [
+            "Change setting in main app",
+            "Open keyboard in another app",
+            "Keyboard uses new setting"
+          ],
+          "passes": false
+        },
+        {
+          "id": "18.4",
+          "description": "OpenRouter API integration for text cleanup",
+          "verification": [
+            "Cloud LLM enabled, API key set",
+            "Dictate 'um like hello'",
+            "Output is cleaned: 'Hello.'"
+          ],
+          "passes": false
+        },
+        {
+          "id": "18.5",
+          "description": "Graceful fallback when cloud API fails",
+          "verification": [
+            "Set invalid API key",
+            "Dictate text",
+            "Raw transcription inserted (no crash)",
+            "Error indicator briefly shown"
           ],
           "passes": false
         }
