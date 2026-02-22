@@ -100,3 +100,13 @@ temp/
 *.tmp
 
 Dictator/.cache
+
+# ===================
+# Android / Gradle
+# ===================
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+*.apk
+*.aab

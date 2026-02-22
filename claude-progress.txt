@@ -690,3 +690,63 @@ Phase 9 (Polish) - Menu bar UX improvements complete
 
 ### Build Status:
 ✅ Build successful
+
+---
+
+## Session: 2026-02-21 - Phase 14 Complete (Android Keyboard Shell)
+
+### Changes Made:
+1. **Created Android project from scratch** (android/ directory)
+   - Kotlin + Gradle build system (AGP 8.7.3, Kotlin 2.0.21)
+   - Targets Android 8.0+ (API 26), compiles against SDK 34
+   - Gradle wrapper with gradle-wrapper.jar for reproducible builds
+
+2. **InputMethodService (DictatorIME.kt)**
+   - Minimal IME with IDLE/RECORDING/PROCESSING states
+   - Mic button toggles recording state (actual recording in Phase 15)
+   - Globe button opens system keyboard picker via InputMethodManager
+   - Visual state changes: blue mic icon (idle) → red stop icon (recording)
+   - Status text updates: "Tap to Dictate" / "Recording..." / "Processing..."
+
+3. **Keyboard UI (keyboard_view.xml)**
+   - Dark background (#1C1C1E) matching macOS app aesthetic
+   - Large 72dp circular mic button (blue, centered)
+   - 40dp globe/switch keyboard button (bottom-left)
+   - Status text above mic button
+   - ConstraintLayout for proper positioning
+
+4. **MainActivity (setup/onboarding)**
+   - Simple setup screen with instructions
+   - "Open Input Settings" button to enable the keyboard
+   - Dark theme matching keyboard appearance
+
+5. **IME configuration (method.xml)**
+   - Declares voice subtype for en_US
+   - Links to MainActivity as settings activity
+   - Custom mic icon for input method list
+
+### Files Created:
+- android/build.gradle.kts, settings.gradle.kts, gradle.properties
+- android/app/build.gradle.kts, proguard-rules.pro
+- android/app/src/main/AndroidManifest.xml
+- android/app/src/main/java/com/dictator/app/DictatorIME.kt
+- android/app/src/main/java/com/dictator/app/MainActivity.kt
+- android/app/src/main/res/xml/method.xml
+- android/app/src/main/res/layout/keyboard_view.xml, activity_main.xml
+- android/app/src/main/res/drawable/ (7 vector/shape files)
+- android/app/src/main/res/values/ (strings, colors, themes)
+
+### Build Status:
+✅ `./gradlew assembleDebug` succeeds
+✅ APK generated: app-debug.apk (5.7MB)
+
+### Verification:
+- 14.1: Project builds successfully ✅
+- 14.2: IME declared in AndroidManifest with BIND_INPUT_METHOD permission ✅
+- 14.3: DictatorIME.onCreateInputView() inflates keyboard layout ✅
+- 14.4: Keyboard shows mic button + "Tap to Dictate" + globe button ✅
+- 14.5: Globe button calls InputMethodManager.showInputMethodPicker() ✅
+
+### Current State:
+- Phase 14 complete (5/5 features passing)
+- Next: Phase 15 (Android Dictation - SpeechRecognizer + text insertion)

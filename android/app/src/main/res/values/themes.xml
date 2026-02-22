@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Dictator" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">#FF3478F6</item>
+        <item name="colorOnPrimary">#FFFFFFFF</item>
+        <item name="colorSecondary">#FF636366</item>
+    </style>
+</resources>

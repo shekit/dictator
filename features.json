@@ -1039,7 +1039,7 @@
             "Project builds in Android Studio",
             "App installs on device/emulator"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "14.2",
@@ -1050,7 +1050,7 @@
             "Dictator keyboard appears in list",
             "Can enable it"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "14.3",
@@ -1061,7 +1061,7 @@
             "Select Dictator",
             "Keyboard UI appears"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "14.4",
@@ -1071,7 +1071,7 @@
             "Shows 'Tap to Dictate' label",
             "Shows switch keyboard button"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "14.5",
@@ -1081,7 +1081,7 @@
             "Tap switch keyboard button",
             "System keyboard picker appears"
           ],
-          "passes": false
+          "passes": true
         }
       ]
     },
