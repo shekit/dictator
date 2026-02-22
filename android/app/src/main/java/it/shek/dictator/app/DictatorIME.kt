@@ -331,6 +331,15 @@ class DictatorIME : InputMethodService() {
 
     private fun deleteWord() {
         val ic = currentInputConnection ?: return
+
+        // If there's a selection, delete it instead of word-backspace
+        val selected = ic.getSelectedText(0)
+        if (selected != null && selected.isNotEmpty()) {
+            ic.commitText("", 1)
+            Log.d(TAG, "Deleted selection (${selected.length} chars)")
+            return
+        }
+
         val before = ic.getTextBeforeCursor(100, 0) ?: return
         if (before.isEmpty()) return
 
