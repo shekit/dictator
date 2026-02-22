@@ -5,4 +5,11 @@
         <item name="colorOnPrimary">#FFFFFFFF</item>
         <item name="colorSecondary">#FF636366</item>
     </style>
+
+    <style name="Theme.Dictator.Transparent" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
 </resources>

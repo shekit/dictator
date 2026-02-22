@@ -6,4 +6,7 @@
     <string name="tap_to_dictate">Tap to Dictate</string>
     <string name="recording">Recording&#8230;</string>
     <string name="processing">Processing&#8230;</string>
+    <string name="mic_permission_needed">Microphone permission required</string>
+    <string name="speech_not_available">Speech recognition not available</string>
+    <string name="speech_error">Speech recognition error</string>
 </resources>

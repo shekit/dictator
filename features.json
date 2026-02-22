@@ -1101,7 +1101,7 @@
             "Grant permission",
             "No crash"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "15.2",
@@ -1111,7 +1111,7 @@
             "SpeechRecognizer initializes without error",
             "Logcat shows 'SpeechRecognizer ready'"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "15.3",
@@ -1122,7 +1122,7 @@
             "SpeechRecognizer begins listening",
             "Logcat shows audio being captured"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "15.4",
@@ -1132,7 +1132,7 @@
             "Tap mic, say 'hello world', tap stop",
             "Text 'hello world' appears in Notes"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "15.5",
@@ -1142,7 +1142,7 @@
             "Stop recording",
             "No crash, no garbage text inserted"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "15.6",
@@ -1153,7 +1153,7 @@
             "Test in third-party app (WhatsApp/Slack)",
             "Text inserts correctly in all"
           ],
-          "passes": false
+          "passes": true
         }
       ]
     },

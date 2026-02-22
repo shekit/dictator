@@ -1,14 +1,21 @@
 package it.shek.dictator.app
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Bundle
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
 import android.inputmethodservice.InputMethodService
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.widget.ImageButton
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 
 /**
  * Dictator Input Method Service - a minimal dictation keyboard.
@@ -39,6 +46,8 @@ class DictatorIME : InputMethodService() {
     private var backspaceButton: ImageButton? = null
     private var statusText: TextView? = null
 
+    private var speechRecognizer: SpeechRecognizer? = null
+
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreateInputView(): View {
         Log.d(TAG, "onCreateInputView")
@@ -54,13 +63,13 @@ class DictatorIME : InputMethodService() {
         backspaceButton?.setOnClickListener { deleteWord() }
 
         loadSettings()
+        initSpeechRecognizer()
         updateUI()
         return view
     }
 
     override fun onStartInputView(info: android.view.inputmethod.EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
-        // Reload settings each time the keyboard appears, in case user changed them
         loadSettings()
         updateUI()
     }
@@ -68,6 +77,108 @@ class DictatorIME : InputMethodService() {
     private fun loadSettings() {
         val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         isTapMode = prefs.getBoolean(KEY_TAP_MODE, false)
+    }
+
+    private fun initSpeechRecognizer() {
+        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
+            Log.e(TAG, "Speech recognition not available on this device")
+            return
+        }
+
+        speechRecognizer?.destroy()
+        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
+            setRecognitionListener(recognitionListener)
+        }
+        Log.d(TAG, "SpeechRecognizer ready")
+    }
+
+    private fun hasRecordPermission(): Boolean {
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) ==
+                PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun requestRecordPermission() {
+        val intent = Intent(this, PermissionActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        startActivity(intent)
+    }
+
+    private fun createRecognizerIntent(): Intent {
+        return Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+        }
+    }
+
+    private val recognitionListener = object : RecognitionListener {
+        override fun onReadyForSpeech(params: Bundle?) {
+            Log.d(TAG, "SpeechRecognizer ready for speech")
+        }
+
+        override fun onBeginningOfSpeech() {
+            Log.d(TAG, "Speech detected")
+        }
+
+        override fun onRmsChanged(rmsdB: Float) {
+            // Audio level changes - could be used for visual feedback later
+        }
+
+        override fun onBufferReceived(buffer: ByteArray?) {}
+
+        override fun onEndOfSpeech() {
+            Log.d(TAG, "End of speech detected")
+            if (state == State.RECORDING) {
+                state = State.PROCESSING
+                updateUI()
+            }
+        }
+
+        override fun onError(error: Int) {
+            val errorMsg = when (error) {
+                SpeechRecognizer.ERROR_AUDIO -> "Audio recording error"
+                SpeechRecognizer.ERROR_CLIENT -> "Client error"
+                SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Insufficient permissions"
+                SpeechRecognizer.ERROR_NETWORK -> "Network error"
+                SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Network timeout"
+                SpeechRecognizer.ERROR_NO_MATCH -> "No speech detected"
+                SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "Recognizer busy"
+                SpeechRecognizer.ERROR_SERVER -> "Server error"
+                SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "No speech detected"
+                else -> "Unknown error ($error)"
+            }
+            Log.e(TAG, "SpeechRecognizer error: $errorMsg")
+
+            // For no-match / speech-timeout, just go back to idle silently
+            // (this is the "handle empty/silent recordings" case)
+            state = State.IDLE
+            updateUI()
+        }
+
+        override fun onResults(results: Bundle?) {
+            val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+            val text = matches?.firstOrNull()?.trim() ?: ""
+            Log.d(TAG, "Final result: '$text'")
+
+            if (text.isNotEmpty()) {
+                insertText(text)
+            }
+
+            state = State.IDLE
+            updateUI()
+        }
+
+        override fun onPartialResults(partialResults: Bundle?) {
+            val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+            val text = matches?.firstOrNull() ?: ""
+            if (text.isNotEmpty()) {
+                Log.d(TAG, "Partial result: '$text'")
+                statusText?.text = text
+            }
+        }
+
+        override fun onEvent(eventType: Int, params: Bundle?) {}
     }
 
     private fun onMicTouch(event: MotionEvent): Boolean {
@@ -99,15 +210,39 @@ class DictatorIME : InputMethodService() {
     }
 
     private fun startRecording() {
+        if (!hasRecordPermission()) {
+            Log.w(TAG, "RECORD_AUDIO permission not granted, requesting...")
+            requestRecordPermission()
+            return
+        }
+
+        if (speechRecognizer == null) {
+            initSpeechRecognizer()
+        }
+
+        if (speechRecognizer == null) {
+            Log.e(TAG, "SpeechRecognizer not available")
+            statusText?.text = getString(R.string.speech_not_available)
+            return
+        }
+
         Log.d(TAG, "Recording started (mode: ${if (isTapMode) "tap" else "hold"})")
         state = State.RECORDING
         updateUI()
+        speechRecognizer?.startListening(createRecognizerIntent())
     }
 
     private fun stopRecording() {
         Log.d(TAG, "Recording stopped (mode: ${if (isTapMode) "tap" else "hold"})")
-        state = State.IDLE
+        state = State.PROCESSING
         updateUI()
+        speechRecognizer?.stopListening()
+    }
+
+    private fun insertText(text: String) {
+        val ic = currentInputConnection ?: return
+        ic.commitText(text, 1)
+        Log.d(TAG, "Inserted text: '$text'")
     }
 
     private fun openSettings() {
@@ -125,7 +260,6 @@ class DictatorIME : InputMethodService() {
         val text = before.toString()
         val end = text.length
 
-        // If trailing spaces exist, delete just the spaces
         if (text[end - 1] == ' ') {
             var i = end
             while (i > 0 && text[i - 1] == ' ') i--
@@ -133,7 +267,6 @@ class DictatorIME : InputMethodService() {
             ic.deleteSurroundingText(spacesToDelete, 0)
             Log.d(TAG, "Deleted $spacesToDelete spaces")
         } else {
-            // No trailing spaces - delete the word back to the previous space
             var i = end
             while (i > 0 && text[i - 1] != ' ') i--
             val charsToDelete = end - i
@@ -157,6 +290,8 @@ class DictatorIME : InputMethodService() {
                 statusText?.text = getString(R.string.recording)
             }
             State.PROCESSING -> {
+                micButton?.setImageResource(R.drawable.ic_mic)
+                micButton?.setBackgroundResource(R.drawable.mic_button_background)
                 statusText?.text = getString(R.string.processing)
             }
         }
@@ -164,6 +299,8 @@ class DictatorIME : InputMethodService() {
 
     override fun onDestroy() {
         Log.d(TAG, "onDestroy")
+        speechRecognizer?.destroy()
+        speechRecognizer = null
         super.onDestroy()
     }
 }
