@@ -461,20 +461,26 @@ class DictatorIME : InputMethodService() {
         val text = before.toString()
         val end = text.length
 
-        if (text[end - 1] == '\n') {
+        val lastChar = text[end - 1]
+        if (lastChar == '\n') {
             // Delete exactly one newline at a time
             ic.deleteSurroundingText(1, 0)
             Log.d(TAG, "Deleted 1 newline")
-        } else if (text[end - 1].isWhitespace()) {
+        } else if (lastChar.isWhitespace()) {
             // Group consecutive non-newline whitespace (spaces, tabs)
             var i = end
             while (i > 0 && text[i - 1].isWhitespace() && text[i - 1] != '\n') i--
             val count = end - i
             ic.deleteSurroundingText(count, 0)
             Log.d(TAG, "Deleted $count whitespace chars")
+        } else if (!lastChar.isLetterOrDigit()) {
+            // Punctuation: delete one character at a time
+            ic.deleteSurroundingText(1, 0)
+            Log.d(TAG, "Deleted 1 punctuation char '$lastChar'")
         } else {
+            // Word: delete back to whitespace or punctuation
             var i = end
-            while (i > 0 && !text[i - 1].isWhitespace()) i--
+            while (i > 0 && text[i - 1].isLetterOrDigit()) i--
             val count = end - i
             ic.deleteSurroundingText(count, 0)
             Log.d(TAG, "Deleted $count chars (word)")
