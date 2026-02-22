@@ -63,8 +63,10 @@ class DictatorIME : InputMethodService() {
     private val backspaceMinInterval = 40L
     private val backspaceAccelStep = 20L // ms faster each repeat
     private var backspaceCurrentInterval = backspaceStartInterval
+    private var backspaceRepeated = false
     private val backspaceRepeatRunnable: Runnable = object : Runnable {
         override fun run() {
+            backspaceRepeated = true
             deleteWord()
             if (backspaceCurrentInterval > backspaceMinInterval) {
                 backspaceCurrentInterval -= backspaceAccelStep
@@ -349,11 +351,13 @@ class DictatorIME : InputMethodService() {
                 backspaceTouchDownY = event.rawY
                 backspaceGesture = BackspaceGesture.NONE
                 backspaceDeletedText = null
+                backspaceRepeated = false
                 backspaceCurrentInterval = backspaceStartInterval
                 backspaceDeletedText = deleteWord()
                 backspaceHandler.postDelayed(backspaceRepeatRunnable, backspaceInitialDelay)
             }
             MotionEvent.ACTION_MOVE -> {
+                if (backspaceRepeated) return true // repeats fired, no swipe
                 val dy = event.rawY - backspaceTouchDownY
                 val newGesture = when {
                     dy < -swipeThresholdPx -> BackspaceGesture.SWIPE_UP
