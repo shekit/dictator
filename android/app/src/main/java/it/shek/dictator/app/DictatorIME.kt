@@ -5,7 +5,10 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -48,6 +51,17 @@ class DictatorIME : InputMethodService() {
 
     private var speechRecognizer: SpeechRecognizer? = null
 
+    // Backspace repeat-on-hold
+    private val backspaceHandler = Handler(Looper.getMainLooper())
+    private var backspaceDelay = 400L // initial delay before repeat starts
+    private val backspaceRepeatInterval = 100L // interval between repeats
+    private val backspaceRepeatRunnable: Runnable = object : Runnable {
+        override fun run() {
+            deleteWord()
+            backspaceHandler.postDelayed(this, backspaceRepeatInterval)
+        }
+    }
+
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreateInputView(): View {
         Log.d(TAG, "onCreateInputView")
@@ -60,7 +74,7 @@ class DictatorIME : InputMethodService() {
 
         micButton?.setOnTouchListener { _, event -> onMicTouch(event) }
         settingsButton?.setOnClickListener { openSettings() }
-        backspaceButton?.setOnClickListener { deleteWord() }
+        backspaceButton?.setOnTouchListener { _, event -> onBackspaceTouch(event) }
 
         loadSettings()
         initSpeechRecognizer()
@@ -80,16 +94,25 @@ class DictatorIME : InputMethodService() {
     }
 
     private fun initSpeechRecognizer() {
-        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-            Log.e(TAG, "Speech recognition not available on this device")
-            return
-        }
-
         speechRecognizer?.destroy()
-        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
-            setRecognitionListener(recognitionListener)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            SpeechRecognizer.isOnDeviceRecognitionAvailable(this)
+        ) {
+            // API 33+: guaranteed on-device, no data sent to Google
+            speechRecognizer = SpeechRecognizer.createOnDeviceSpeechRecognizer(this).apply {
+                setRecognitionListener(recognitionListener)
+            }
+            Log.d(TAG, "SpeechRecognizer ready (on-device)")
+        } else if (SpeechRecognizer.isRecognitionAvailable(this)) {
+            // Older devices: use standard recognizer with offline preference
+            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
+                setRecognitionListener(recognitionListener)
+            }
+            Log.d(TAG, "SpeechRecognizer ready (standard, prefer offline)")
+        } else {
+            Log.e(TAG, "Speech recognition not available on this device")
         }
-        Log.d(TAG, "SpeechRecognizer ready")
     }
 
     private fun hasRecordPermission(): Boolean {
@@ -109,6 +132,7 @@ class DictatorIME : InputMethodService() {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
         }
     }
 
@@ -252,6 +276,19 @@ class DictatorIME : InputMethodService() {
         startActivity(intent)
     }
 
+    private fun onBackspaceTouch(event: MotionEvent): Boolean {
+        when (event.action) {
+            MotionEvent.ACTION_DOWN -> {
+                deleteWord()
+                backspaceHandler.postDelayed(backspaceRepeatRunnable, backspaceDelay)
+            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                backspaceHandler.removeCallbacks(backspaceRepeatRunnable)
+            }
+        }
+        return true
+    }
+
     private fun deleteWord() {
         val ic = currentInputConnection ?: return
         val before = ic.getTextBeforeCursor(100, 0) ?: return
@@ -299,6 +336,7 @@ class DictatorIME : InputMethodService() {
 
     override fun onDestroy() {
         Log.d(TAG, "onDestroy")
+        backspaceHandler.removeCallbacks(backspaceRepeatRunnable)
         speechRecognizer?.destroy()
         speechRecognizer = null
         super.onDestroy()
