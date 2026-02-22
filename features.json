@@ -1253,7 +1253,7 @@
             "Session saved to local database with timestamp, text, word count, duration",
             "Logcat shows 'Session saved' with correct data"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "18.2",
@@ -1264,7 +1264,7 @@
             "Shows all-time stats: total words, average WPM, total sessions",
             "Stats update after new dictation sessions"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "18.3",
@@ -1274,7 +1274,7 @@
             "Shows list of past transcriptions sorted by most recent",
             "Each entry shows timestamp, full text, word count, and duration"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "18.4",
@@ -1284,7 +1284,7 @@
             "Session record shows WPM = (word count / duration) * 60",
             "WPM value is reasonable (typically 100-180 for speech)"
           ],
-          "passes": false
+          "passes": true
         },
         {
           "id": "18.5",
@@ -1295,7 +1295,7 @@
             "Force-close and reopen main app",
             "Stats and transcriptions are preserved"
           ],
-          "passes": false
+          "passes": true
         }
       ]
     },
