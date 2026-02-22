@@ -63,7 +63,7 @@ Every coding session, follow this sequence:
 ### Do
 - Work on features in phase order (Phase 1 before Phase 2, etc.)
 - Test each feature before marking it complete
-- Make atomic commits (one feature = one commit)
+- **COMMIT AFTER EVERY FEATURE.** One feature = one git commit. Do NOT batch multiple features into a single commit. Commit immediately after marking a feature as passing.
 - Leave code in a compilable state at session end
 - Update progress files before ending session
 
