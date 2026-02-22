@@ -14,6 +14,7 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.inputmethodservice.InputMethodService
 import android.util.Log
+import android.util.TypedValue
 import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.View
@@ -74,6 +75,13 @@ class DictatorIME : InputMethodService() {
             backspaceHandler.postDelayed(this, backspaceCurrentInterval)
         }
     }
+
+    // Backspace swipe gesture: up = space, down = enter
+    private enum class BackspaceGesture { NONE, SWIPE_UP, SWIPE_DOWN }
+    private var backspaceTouchDownY = 0f
+    private var backspaceGesture = BackspaceGesture.NONE
+    private var backspaceDeletedText: String? = null // for undo on swipe
+    private val swipeThresholdDp = 30f
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreateInputView(): View {
@@ -332,32 +340,84 @@ class DictatorIME : InputMethodService() {
     }
 
     private fun onBackspaceTouch(event: MotionEvent): Boolean {
+        val swipeThresholdPx = TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP, swipeThresholdDp, resources.displayMetrics
+        )
+
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
+                backspaceTouchDownY = event.rawY
+                backspaceGesture = BackspaceGesture.NONE
+                backspaceDeletedText = null
                 backspaceCurrentInterval = backspaceStartInterval
-                deleteWord()
+                backspaceDeletedText = deleteWord()
                 backspaceHandler.postDelayed(backspaceRepeatRunnable, backspaceInitialDelay)
             }
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+            MotionEvent.ACTION_MOVE -> {
+                val dy = event.rawY - backspaceTouchDownY
+                val newGesture = when {
+                    dy < -swipeThresholdPx -> BackspaceGesture.SWIPE_UP
+                    dy > swipeThresholdPx -> BackspaceGesture.SWIPE_DOWN
+                    else -> BackspaceGesture.NONE
+                }
+                if (newGesture != BackspaceGesture.NONE && backspaceGesture == BackspaceGesture.NONE) {
+                    // Just crossed threshold — cancel backspace and undo initial delete
+                    backspaceHandler.removeCallbacks(backspaceRepeatRunnable)
+                    undoInitialDelete()
+                    backspaceGesture = newGesture
+                    backspaceButton?.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                    Log.d(TAG, "Backspace swipe detected: $newGesture")
+                }
+            }
+            MotionEvent.ACTION_UP -> {
                 backspaceHandler.removeCallbacks(backspaceRepeatRunnable)
+                when (backspaceGesture) {
+                    BackspaceGesture.SWIPE_UP -> {
+                        val ic = currentInputConnection
+                        ic?.commitText(" ", 1)
+                        Log.d(TAG, "Swipe up: inserted space")
+                    }
+                    BackspaceGesture.SWIPE_DOWN -> {
+                        val ic = currentInputConnection
+                        ic?.commitText("\n", 1)
+                        Log.d(TAG, "Swipe down: inserted newline")
+                    }
+                    BackspaceGesture.NONE -> { /* normal backspace, already handled */ }
+                }
+                backspaceGesture = BackspaceGesture.NONE
+                backspaceDeletedText = null
+            }
+            MotionEvent.ACTION_CANCEL -> {
+                backspaceHandler.removeCallbacks(backspaceRepeatRunnable)
+                backspaceGesture = BackspaceGesture.NONE
+                backspaceDeletedText = null
             }
         }
         return true
     }
 
-    private fun deleteWord() {
+    private fun undoInitialDelete() {
+        val text = backspaceDeletedText ?: return
         val ic = currentInputConnection ?: return
+        ic.commitText(text, 1)
+        Log.d(TAG, "Undid initial delete: '$text'")
+        backspaceDeletedText = null
+    }
+
+    /** Deletes one word (or selection) and returns the deleted text for potential undo. */
+    private fun deleteWord(): String? {
+        val ic = currentInputConnection ?: return null
 
         // If there's a selection, delete it instead of word-backspace
         val selected = ic.getSelectedText(0)
         if (selected != null && selected.isNotEmpty()) {
             ic.commitText("", 1)
             Log.d(TAG, "Deleted selection (${selected.length} chars)")
-            return
+            return selected.toString()
         }
 
-        val before = ic.getTextBeforeCursor(100, 0) ?: return
-        if (before.isEmpty()) return
+        val before = ic.getTextBeforeCursor(100, 0) ?: return null
+        if (before.isEmpty()) return null
 
         val text = before.toString()
         val end = text.length
@@ -366,14 +426,18 @@ class DictatorIME : InputMethodService() {
             var i = end
             while (i > 0 && text[i - 1] == ' ') i--
             val spacesToDelete = end - i
+            val deleted = text.substring(end - spacesToDelete)
             ic.deleteSurroundingText(spacesToDelete, 0)
             Log.d(TAG, "Deleted $spacesToDelete spaces")
+            return deleted
         } else {
             var i = end
             while (i > 0 && text[i - 1] != ' ') i--
             val charsToDelete = end - i
+            val deleted = text.substring(end - charsToDelete)
             ic.deleteSurroundingText(charsToDelete, 0)
             Log.d(TAG, "Deleted $charsToDelete chars (word)")
+            return deleted
         }
     }
 

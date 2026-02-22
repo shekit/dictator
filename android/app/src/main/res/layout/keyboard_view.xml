@@ -50,18 +50,47 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Backspace button (right) - deletes whole word -->
-    <ImageButton
-        android:id="@+id/backspaceButton"
+    <!-- Backspace button with swipe hints: up=space, down=enter -->
+    <LinearLayout
+        android:id="@+id/backspaceContainer"
         android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:src="@drawable/ic_backspace"
-        android:background="@drawable/side_button_background"
-        android:contentDescription="Delete word"
-        android:scaleType="center"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
         app:layout_constraintStart_toEndOf="@id/micButton"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@id/micButton"
-        app:layout_constraintBottom_toBottomOf="@id/micButton" />
+        app:layout_constraintBottom_toBottomOf="@id/micButton">
+
+        <TextView
+            android:id="@+id/hintSpace"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="␣"
+            android:textColor="@color/text_secondary"
+            android:textSize="10sp"
+            android:alpha="0.4"
+            android:layout_marginBottom="2dp" />
+
+        <ImageButton
+            android:id="@+id/backspaceButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/ic_backspace"
+            android:background="@drawable/side_button_background"
+            android:contentDescription="Delete word, slide up for space, slide down for enter"
+            android:scaleType="center" />
+
+        <TextView
+            android:id="@+id/hintEnter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="⏎"
+            android:textColor="@color/text_secondary"
+            android:textSize="10sp"
+            android:alpha="0.4"
+            android:layout_marginTop="2dp" />
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
