@@ -220,10 +220,7 @@ class DictatorIME : InputMethodService() {
             if (userWantsRecording) {
                 // SpeechRecognizer auto-stopped on silence, but user is still
                 // holding mic (hold mode) or hasn't tapped stop (tap mode).
-                // Insert what we have + a space so the next chunk doesn't merge.
-                if (text.isNotEmpty()) {
-                    insertText(" ")
-                }
+                // Space between chunks is handled by insertText's auto-space logic.
                 Log.d(TAG, "Auto-restarting SpeechRecognizer (user still recording)")
                 state = State.RECORDING
                 speechRecognizer?.startListening(createRecognizerIntent())
@@ -314,8 +311,17 @@ class DictatorIME : InputMethodService() {
 
     private fun insertText(text: String) {
         val ic = currentInputConnection ?: return
-        ic.commitText(text, 1)
-        Log.d(TAG, "Inserted text: '$text'")
+        // Auto-insert space if previous char isn't whitespace/empty
+        val before = ic.getTextBeforeCursor(1, 0)
+        if (text != " " && before != null && before.isNotEmpty() &&
+            !before.last().isWhitespace()
+        ) {
+            ic.commitText(" $text", 1)
+            Log.d(TAG, "Inserted text with auto-space: '$text'")
+        } else {
+            ic.commitText(text, 1)
+            Log.d(TAG, "Inserted text: '$text'")
+        }
     }
 
     private fun openSettings() {
