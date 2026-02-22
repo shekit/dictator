@@ -335,16 +335,18 @@ class DictatorIME : InputMethodService() {
 
     private fun insertText(text: String) {
         val ic = currentInputConnection ?: return
+        // Lowercase to avoid mid-sentence capitals when speech recognizer restarts
+        val lowered = text.lowercase()
         // Auto-insert space if previous char isn't whitespace/empty
         val before = ic.getTextBeforeCursor(1, 0)
-        if (text != " " && before != null && before.isNotEmpty() &&
+        if (lowered != " " && before != null && before.isNotEmpty() &&
             !before.last().isWhitespace()
         ) {
-            ic.commitText(" $text", 1)
-            Log.d(TAG, "Inserted text with auto-space: '$text'")
+            ic.commitText(" $lowered", 1)
+            Log.d(TAG, "Inserted text with auto-space: '$lowered'")
         } else {
-            ic.commitText(text, 1)
-            Log.d(TAG, "Inserted text: '$text'")
+            ic.commitText(lowered, 1)
+            Log.d(TAG, "Inserted text: '$lowered'")
         }
     }
 
