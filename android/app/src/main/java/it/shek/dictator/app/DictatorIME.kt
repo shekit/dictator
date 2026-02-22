@@ -43,6 +43,9 @@ class DictatorIME : InputMethodService() {
 
     private var isTapMode = false
     private var state = State.IDLE
+    // Tracks whether the user still wants to record (hasn't lifted finger / tapped stop).
+    // SpeechRecognizer may auto-stop on silence, but we auto-restart if this is true.
+    private var userWantsRecording = false
 
     private var micButton: ImageButton? = null
     private var settingsButton: ImageButton? = null
@@ -152,8 +155,9 @@ class DictatorIME : InputMethodService() {
         override fun onBufferReceived(buffer: ByteArray?) {}
 
         override fun onEndOfSpeech() {
-            Log.d(TAG, "End of speech detected")
-            if (state == State.RECORDING) {
+            Log.d(TAG, "End of speech detected (userWantsRecording=$userWantsRecording)")
+            // Don't transition to PROCESSING if we plan to auto-restart
+            if (!userWantsRecording && state == State.RECORDING) {
                 state = State.PROCESSING
                 updateUI()
             }
@@ -172,25 +176,44 @@ class DictatorIME : InputMethodService() {
                 SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "No speech detected"
                 else -> "Unknown error ($error)"
             }
-            Log.e(TAG, "SpeechRecognizer error: $errorMsg")
+            Log.e(TAG, "SpeechRecognizer error: $errorMsg (userWantsRecording=$userWantsRecording)")
 
-            // For no-match / speech-timeout, just go back to idle silently
-            // (this is the "handle empty/silent recordings" case)
-            state = State.IDLE
-            updateUI()
+            val issilenceError = error == SpeechRecognizer.ERROR_NO_MATCH ||
+                    error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT
+
+            if (userWantsRecording && issilenceError) {
+                // User is still holding/recording but there was just silence.
+                // Restart listening instead of stopping.
+                Log.d(TAG, "Auto-restarting SpeechRecognizer after silence")
+                state = State.RECORDING
+                speechRecognizer?.startListening(createRecognizerIntent())
+            } else {
+                state = State.IDLE
+                userWantsRecording = false
+                updateUI()
+            }
         }
 
         override fun onResults(results: Bundle?) {
             val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
             val text = matches?.firstOrNull()?.trim() ?: ""
-            Log.d(TAG, "Final result: '$text'")
+            Log.d(TAG, "Final result: '$text' (userWantsRecording=$userWantsRecording)")
 
             if (text.isNotEmpty()) {
                 insertText(text)
             }
 
-            state = State.IDLE
-            updateUI()
+            if (userWantsRecording) {
+                // SpeechRecognizer auto-stopped on silence, but user is still
+                // holding mic (hold mode) or hasn't tapped stop (tap mode).
+                // Insert what we have and restart listening.
+                Log.d(TAG, "Auto-restarting SpeechRecognizer (user still recording)")
+                state = State.RECORDING
+                speechRecognizer?.startListening(createRecognizerIntent())
+            } else {
+                state = State.IDLE
+                updateUI()
+            }
         }
 
         override fun onPartialResults(partialResults: Bundle?) {
@@ -256,6 +279,7 @@ class DictatorIME : InputMethodService() {
         }
 
         Log.d(TAG, "Recording started (mode: ${if (isTapMode) "tap" else "hold"})")
+        userWantsRecording = true
         state = State.RECORDING
         updateUI()
         speechRecognizer?.startListening(createRecognizerIntent())
@@ -263,6 +287,7 @@ class DictatorIME : InputMethodService() {
 
     private fun stopRecording() {
         Log.d(TAG, "Recording stopped (mode: ${if (isTapMode) "tap" else "hold"})")
+        userWantsRecording = false
         state = State.PROCESSING
         updateUI()
         speechRecognizer?.stopListening()
