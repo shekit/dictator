@@ -93,7 +93,10 @@ actor OpenRouterClient {
         temperature: Double = 0.3,
         maxTokens: Int = 500
     ) async throws -> CompletionResponse {
-        guard let apiKey = await getAPIKey(), !apiKey.isEmpty else {
+        let apiKeyValue = await getAPIKey()
+        print("[OpenRouterClient] API key lookup: \(apiKeyValue != nil ? "found (\(apiKeyValue!.prefix(10))...)" : "NOT FOUND (nil)")")
+        guard let apiKey = apiKeyValue, !apiKey.isEmpty else {
+            print("[OpenRouterClient] ⚠️ No API key available - cannot make request")
             throw OpenRouterError.noAPIKey
         }
 

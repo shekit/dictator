@@ -477,6 +477,12 @@ struct SettingsTabView: View {
         if !trimmed.isEmpty {
             UserDefaults.standard.set(trimmed, forKey: "openRouterAPIKey")
             print("[Settings] API key saved")
+
+            // Auto-switch to cloud mode if currently off
+            if llmService.processingMode == .off {
+                llmService.processingMode = .cloud
+                print("[Settings] Auto-switched to cloud mode after API key save")
+            }
         }
         isEditingAPIKey = false
     }
@@ -485,6 +491,11 @@ struct SettingsTabView: View {
         UserDefaults.standard.removeObject(forKey: "openRouterAPIKey")
         apiKey = ""
         isEditingAPIKey = false
+        // Switch away from cloud mode since key is gone
+        if llmService.processingMode == .cloud {
+            llmService.processingMode = .off
+            print("[Settings] Switched to off mode after API key removal")
+        }
         print("[Settings] API key removed")
     }
 }

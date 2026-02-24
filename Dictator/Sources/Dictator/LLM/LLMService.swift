@@ -155,24 +155,28 @@ final class LLMService: ObservableObject {
     /// Process transcription through LLM for cleanup.
     /// Returns the original text if processing is disabled or fails.
     func processTranscription(_ rawText: String) async -> (text: String, wasProcessed: Bool) {
+        print("[LLMService] processTranscription called - mode=\(processingMode.rawValue), textLength=\(rawText.count), hasAPIKey=\(EnvLoader.shared.hasOpenRouterKey), apiKeyPresent=\(EnvLoader.shared.openRouterAPIKey != nil)")
+
         // If processing is off, return raw text
         guard processingMode != .off else {
-            print("[LLMService] Processing disabled, returning raw text")
+            print("[LLMService] Processing disabled (mode=off), returning raw text")
             return (rawText, false)
         }
 
         // Skip empty or very short text
         guard rawText.count >= 3 else {
+            print("[LLMService] Text too short (\(rawText.count) chars), skipping processing")
             return (rawText, false)
         }
 
         // For cloud mode, use OpenRouter
         if processingMode == .cloud {
             do {
+                print("[LLMService] Starting cloud processing...")
                 let cleanedText = try await processWithOpenRouter(rawText)
                 return (cleanedText, true)
             } catch {
-                print("[LLMService] OpenRouter processing failed: \(error.localizedDescription)")
+                print("[LLMService] ⚠️ OpenRouter processing FAILED: \(error)")
                 // Fall back to raw text on error
                 return (rawText, false)
             }
@@ -181,15 +185,17 @@ final class LLMService: ObservableObject {
         // For local mode, use Ollama
         if processingMode == .local {
             do {
+                print("[LLMService] Starting local processing...")
                 let cleanedText = try await processWithOllama(rawText)
                 return (cleanedText, true)
             } catch {
-                print("[LLMService] Ollama processing failed: \(error.localizedDescription)")
+                print("[LLMService] ⚠️ Ollama processing FAILED: \(error)")
                 // Fall back to raw text on error
                 return (rawText, false)
             }
         }
 
+        print("[LLMService] ⚠️ No processing path matched for mode=\(processingMode.rawValue)")
         return (rawText, false)
     }
 

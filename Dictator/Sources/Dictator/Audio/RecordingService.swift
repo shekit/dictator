@@ -316,6 +316,14 @@ final class RecordingService: ObservableObject {
                     print("[RecordingService] LLM processed: '\(processedText)'")
                 } else {
                     print("[RecordingService] Using raw transcription")
+                    // Notify user if LLM processing was expected but failed
+                    if llmService.processingMode != .off {
+                        let modeName = llmService.processingMode == .cloud ? "Cloud" : "Local"
+                        notificationService.showError(
+                            title: "\(modeName) Processing Failed",
+                            message: "Falling back to raw text. Check your \(llmService.processingMode == .cloud ? "API key" : "Ollama connection") in Settings."
+                        )
+                    }
                 }
 
                 // Inject text at cursor position
